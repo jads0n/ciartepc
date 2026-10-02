@@ -262,31 +262,40 @@ export default function LiveDashboardPage() {
 
         const now = new Date().toLocaleTimeString('pt-BR', { hour12: false });
         const stationId = String(payload.new?.station_id || '');
-        let detail = 'Resposta registrada na bancada';
-        let stationLabel = `ESTAÇÃO ${stationId.toUpperCase()}`;
-
-        if (stationId === 'arquivo-secreto') {
-          stationLabel = 'ARQUIVO SECRETO';
-          detail = 'Decifrou o Enigma Bletchley (+250 XP)!';
-        } else if (stationId === 'arquivo-secreto-historico') {
-          stationLabel = 'ARQUIVO SECRETO';
-          detail = 'Decifrou código histórico confidencial!';
-        }
-
-        const newLog: LiveLogItem = {
-          id: Math.random().toString(),
-          time: now,
-          agent: `AGENTE #${Math.floor(100 + Math.random() * 900)}`,
-          station: stationLabel,
-          detail,
-          type: stationId.includes('secreto') ? 'unlock' : 'vote',
+        
+        // Map station UUID to station name
+        const stationUuidMap: Record<string, string> = {
+          '3b922472-cc81-4457-b613-bdd41346d7a0': 'ESTAÇÃO 01 // TURING',
+          'cb4a8ffa-6d7c-412b-be1e-0deb0529761f': 'ESTAÇÃO 02 // CARRINHO',
+          'fcf693f5-99aa-43f7-94f5-8a7b4a02d873': 'ESTAÇÃO 03 // APRENDIZADO',
+          '1f43e47f-3bda-4369-9d7a-41bd91f40874': 'ESTAÇÃO 04 // ENGANE A IA',
+          '759f8319-5cf4-4875-8555-61c55f0827bc': 'ESTAÇÃO 05 // REAL OU IA',
+          '520c7ae0-6e5e-45cc-bbdc-26a97c8be31b': 'ESTAÇÃO 06 // ÉTICA',
+          '9ef2446a-59f4-476e-a0f2-2376e70fa707': 'ESTAÇÃO 07 // AUDITORIA',
+          '8b6970d2-a3a3-4ad8-80b1-d8ce05ef6c94': 'ESTAÇÃO 08 // PERGUNTA FINAL',
         };
+        const stationLabel = stationUuidMap[stationId] || `ESTAÇÃO ${stationId.slice(0, 8).toUpperCase()}`;
 
-        setLogs((prev) => [newLog, ...prev.slice(0, 7)]);
-        if (stationId.includes('secreto')) {
-          setLatestToast('CÓDIGO SECRETO DECIFRADO NO LABORATÓRIO! (+250 XP)');
-          setTimeout(() => setLatestToast(null), 4000);
-        }
+        const visitorId = String(payload.new?.visitor_id || '');
+        // Resolve visitor name from current top agents loaded (approx - full name lookup)
+        // The visitor INSERT event will have triggered a fetch refresh, but we do a quick lookup
+        supabase
+          .from('visitors')
+          .select('nickname, agent_number')
+          .eq('id', visitorId)
+          .single()
+          .then(({ data: vData }) => {
+            const agentName = vData?.nickname || `AGENTE #${vData?.agent_number || '???'}`;
+            const newLog: LiveLogItem = {
+              id: Math.random().toString(),
+              time: now,
+              agent: agentName,
+              station: stationLabel,
+              detail: `Respondeu na bancada • ${(payload.new?.selected_option || '').toString().toUpperCase()}`,
+              type: 'vote',
+            };
+            setLogs((prev) => [newLog, ...prev.slice(0, 7)]);
+          });
       })
       .subscribe();
 

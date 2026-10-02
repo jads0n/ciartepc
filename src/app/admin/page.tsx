@@ -391,14 +391,12 @@ export default function AdminPage() {
         if (errVis) console.warn('Aviso visitors delete:', errVis);
       }
 
-      // 5. Limpar dados locais do navegador (se o próprio professor/celular foi usado para testes)
+      // 5. Limpar dados locais do navegador (chave correta: turing_lab_agent_session)
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('turing_lab_agent');
-        localStorage.removeItem('turing_lab_completed_stations');
-        localStorage.removeItem('turing_lab_unlocked_stations');
-        localStorage.removeItem('turing_lab_solved_crypto_slots');
-        localStorage.removeItem('turing_lab_offline_queue');
-        localStorage.removeItem('turing_lab_offline_responses');
+        // Apagar todas as chaves do localStorage relacionadas ao app
+        const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('turing_lab'));
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        console.log(`Limpou ${keysToRemove.length} chaves do localStorage:`, keysToRemove);
       }
 
       // 6. Atualizar estado visual
