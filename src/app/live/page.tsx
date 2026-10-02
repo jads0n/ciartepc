@@ -47,46 +47,31 @@ interface LiveLogItem {
   type: 'vote' | 'agent' | 'unlock';
 }
 
-const INITIAL_LOGS: LiveLogItem[] = [
-  { id: '1', time: '15:34:12', agent: 'AGENTE #0104', station: 'ESTAÇÃO 08', detail: 'Opinou: "Depende do que chamamos de pensar"', type: 'vote' },
-  { id: '2', time: '15:33:48', agent: 'AGENTE #0288', station: 'ESTAÇÃO 05', detail: 'Classificou imagem como gerada por IA', type: 'vote' },
-  { id: '3', time: '15:32:30', agent: 'AGENTE #0315', station: 'LABORATÓRIO', detail: 'Desbloqueou Dossiê Bletchley Park', type: 'unlock' },
-  { id: '4', time: '15:31:05', agent: 'AGENTE #0412', station: 'ESTAÇÃO 01', detail: 'Considerou DIFÍCIL reconhecer uma IA hoje', type: 'vote' },
-  { id: '5', time: '15:29:40', agent: 'AGENTE #0199', station: 'ESTAÇÃO 06', detail: 'Votou: Supervisão humana obrigatória', type: 'vote' },
-];
+const INITIAL_LOGS: LiveLogItem[] = [];
 
 const INITIAL_REFLECTIONS = [
-  { nickname: 'AGENTE #0104', quote: 'Uma IA pode gerar uma sinfonia em segundos, mas nunca sentirá a emoção que ela provoca em quem escuta.' },
-  { nickname: 'AGENTE #0219', quote: 'O perigo não é o computador pensar como um ser humano, é o ser humano aceitar decisões sem pensar.' },
-  { nickname: 'AGENTE #0302', quote: 'Entendi na Estação 02 que automação não é inteligência artificial. Inteligência requer aprender com exemplos do mundo real.' },
-  { nickname: 'AGENTE #0112', quote: 'A questão urgente não é se a máquina pode pensar, mas o que devemos deixar ela decidir por nós.' },
+  { nickname: 'Turing Lab', quote: 'Aguardando os primeiros investigadores... Escaneie o QR Code para ingressar!' },
 ];
 
 const INITIAL_STATS: AggregatedStats = {
-  totalVisitors: 94,
-  totalResponses: 572,
-  turingAccuracy: 68,
-  cartAiAccuracy: 58,
+  totalVisitors: 0,
+  totalResponses: 0,
+  turingAccuracy: 0,
+  cartAiAccuracy: 0,
   hardestMediaChallenge: {
-    title: 'Desafio Imagem #04 (Retrato Sintético)',
-    fooledPercentage: 74,
+    title: '—',
+    fooledPercentage: 0,
   },
   ethicsDistribution: {
-    sim: 18,
-    nao: 49,
-    depende: 33,
+    sim: 0,
+    nao: 0,
+    depende: 0,
   },
   preVsPost: {
-    pre: { sim: 44, nao: 36, nao_sei: 20, avgTrust: 7.1 },
-    post: { sim: 28, nao: 22, depende: 44, nao_sei: 6, avgTrust: 5.9 },
+    pre: { sim: 0, nao: 0, nao_sei: 0, avgTrust: 0 },
+    post: { sim: 0, nao: 0, depende: 0, nao_sei: 0, avgTrust: 0 },
   },
-  topAgents: [
-    { nickname: 'AGENTE #0104', total_score: 525, agent_number: 104 },
-    { nickname: 'Detetive Turing', total_score: 475, agent_number: 112 },
-    { nickname: 'AGENTE #0219', total_score: 450, agent_number: 219 },
-    { nickname: 'CriptoAna', total_score: 425, agent_number: 108 },
-    { nickname: 'AGENTE #0302', total_score: 400, agent_number: 302 },
-  ],
+  topAgents: [],
 };
 
 const SCREENS = [
@@ -495,10 +480,14 @@ export default function LiveDashboardPage() {
                   <Scale className="w-6 h-6 text-turing-red" />
                 </div>
                 <div className="text-4xl sm:text-6xl font-mono font-black text-turing-red mt-2">
-                  82%
+                  {stats.totalResponses > 0
+                    ? `${stats.ethicsDistribution.nao + stats.ethicsDistribution.depende}%`
+                    : '—'}
                 </div>
                 <div className="text-xs font-mono text-archive-muted mt-1">
-                  Exigem supervisão humana em decisões
+                  {stats.totalResponses > 0
+                    ? 'Exigem supervisão humana em decisões'
+                    : 'Aguardando votos dos alunos'}
                 </div>
               </div>
             </div>
@@ -614,19 +603,27 @@ export default function LiveDashboardPage() {
                 </div>
 
                 <div className="space-y-2.5 font-mono text-xs flex-1">
-                  {logs.slice(0, 5).map((log) => (
-                    <div
-                      key={log.id}
-                      className="p-2.5 bg-archive-950 border-l-2 border-turing-amber rounded-r-xs space-y-1 shadow-sm"
-                    >
-                      <div className="flex items-center justify-between text-[11px] text-archive-muted">
-                        <span className="text-turing-cyan font-bold">{log.station}</span>
-                        <span>{log.time}</span>
-                      </div>
-                      <div className="text-archive-paper font-semibold">{log.agent}</div>
-                      <div className="text-archive-muted text-[11px] truncate">{log.detail}</div>
+                  {logs.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center py-8 text-center text-archive-muted space-y-2">
+                      <Radio className="w-6 h-6 text-archive-600 animate-pulse" />
+                      <p className="text-xs font-bold text-archive-paper">Aguardando eventos ao vivo...</p>
+                      <p className="text-[11px] text-archive-500">Os eventos dos alunos aparecerão aqui em tempo real.</p>
                     </div>
-                  ))}
+                  ) : (
+                    logs.slice(0, 5).map((log) => (
+                      <div
+                        key={log.id}
+                        className="p-2.5 bg-archive-950 border-l-2 border-turing-amber rounded-r-xs space-y-1 shadow-sm"
+                      >
+                        <div className="flex items-center justify-between text-[11px] text-archive-muted">
+                          <span className="text-turing-cyan font-bold">{log.station}</span>
+                          <span>{log.time}</span>
+                        </div>
+                        <div className="text-archive-paper font-semibold">{log.agent}</div>
+                        <div className="text-archive-muted text-[11px] truncate">{log.detail}</div>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-archive-800 text-[11px] font-mono text-archive-muted text-center flex items-center justify-center gap-2">
