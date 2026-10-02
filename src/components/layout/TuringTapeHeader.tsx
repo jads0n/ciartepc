@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAgent } from '@/hooks/useAgent';
-import { Award, Wifi, WifiOff, Edit3, Check, X, Shield, Lock } from 'lucide-react';
+import { Award, Wifi, WifiOff, Edit3, Check, X, Shield, Lock, QrCode } from 'lucide-react';
 
 export function TuringTapeHeader() {
   const pathname = usePathname();
@@ -160,6 +160,17 @@ export function TuringTapeHeader() {
             }`}
           >
             [ PASSAPORTE ]
+          </Link>
+          <Link
+            href="/escanear"
+            className={`px-2.5 py-1 rounded-xs transition-colors flex items-center gap-1.5 font-bold ${
+              pathname === '/escanear'
+                ? 'bg-turing-amber text-archive-950 shadow-sm'
+                : 'bg-turing-amber/15 text-turing-amber hover:bg-turing-amber/25 border border-turing-amber/40'
+            }`}
+          >
+            <QrCode className="w-3.5 h-3.5 shrink-0" />
+            <span>[ ESCANEAR QR ]</span>
           </Link>
           <Link
             href="/arquivo-secreto"

@@ -227,17 +227,22 @@ export default function PassportPage() {
         </div>
       )}
 
-      {/* Caixa Interativa de Desbloqueio Rápido */}
-      <div className="bg-archive-900 border border-turing-amber/50 p-4 rounded-sm space-y-3 shadow-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-archive-800 pb-2">
-          <div className="flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-turing-amber" />
-            <span className="font-mono text-xs sm:text-sm font-bold text-archive-paper uppercase tracking-wider">
-              ABRIR BANCADA POR CÓDIGO
-            </span>
-          </div>
-          <span className="text-[11px] font-mono text-archive-muted">
-            DIGITE OS 4 DÍGITOS DA PLACA DA MESA
+      {/* Caixa Interativa de Desbloqueio: Botão Direto de Escanear QR Code + Digitar Código */}
+      <div className="bg-archive-900 border-2 border-turing-amber/50 p-4 rounded-sm space-y-4 shadow-lg">
+        {/* BOTÃO PRINCIPAL DIRETO: ESCANEAR QR CODE */}
+        <Link
+          href="/escanear"
+          className="w-full py-3.5 px-4 bg-gradient-to-r from-turing-amber via-amber-400 to-turing-amber text-archive-950 font-mono text-sm sm:text-base font-black rounded-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all shadow-[0_0_20px_rgba(245,158,11,0.25)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] active:scale-98 cursor-pointer"
+        >
+          <QrCode className="w-5 h-5 shrink-0" />
+          <span>📷 ESCANEAR QR CODE DA BANCADA</span>
+        </Link>
+
+        {/* Divisor "OU DIGITE O CÓDIGO" */}
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-archive-800 w-full" />
+          <span className="bg-archive-900 px-3 text-[10px] font-mono text-archive-muted uppercase tracking-wider absolute">
+            OU DIGITE OS 4 DÍGITOS DA PLACA
           </span>
         </div>
 
@@ -267,7 +272,7 @@ export default function PassportPage() {
 
           <button
             type="submit"
-            className="px-5 py-2.5 bg-turing-amber text-archive-950 hover:bg-amber-400 font-mono text-xs font-bold rounded-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer shadow-sm active:scale-95"
+            className="px-5 py-2.5 bg-archive-800 hover:bg-archive-750 text-turing-amber font-mono text-xs font-bold rounded-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer border border-archive-700 hover:border-turing-amber"
           >
             <Zap className="w-4 h-4" />
             <span>ABRIR ESTAÇÃO</span>
@@ -285,17 +290,6 @@ export default function PassportPage() {
             <span>{feedbackMsg.text}</span>
           </div>
         )}
-
-        <div className="flex flex-wrap items-center justify-between text-[11px] font-mono text-archive-muted pt-1 gap-2">
-          <div className="flex items-center gap-1.5 text-archive-muted">
-            <QrCode className="w-3.5 h-3.5 text-turing-cyan" />
-            <span>Dica: escaneie o QR Code na placa da mesa para abrir direto sem precisar digitar!</span>
-          </div>
-          <div className="flex items-center gap-1 text-archive-500 font-mono text-[10px]">
-            <Lock className="w-3 h-3 text-turing-amber" />
-            <span>Códigos disponíveis nas bancadas físicas</span>
-          </div>
-        </div>
       </div>
 
       {/* Grade das 8 Estações */}

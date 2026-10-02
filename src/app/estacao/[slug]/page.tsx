@@ -237,9 +237,17 @@ function StationContent() {
               <span>DESBLOQUEAR BANCADA</span>
             </TerminalButton>
 
-            <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-archive-muted pt-2 border-t border-archive-800">
-              <QrCode className="w-3.5 h-3.5 text-turing-cyan" />
-              <span>Dica: aponte a câmera do celular no QR Code da bancada para abrir direto!</span>
+            <div className="pt-2 border-t border-archive-800 space-y-2">
+              <Link
+                href="/escanear"
+                className="w-full py-2.5 px-4 bg-archive-850 hover:bg-archive-800 border border-turing-amber/40 text-turing-amber hover:text-amber-300 font-mono text-xs font-bold rounded-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <QrCode className="w-4 h-4 text-turing-amber" />
+                <span>📷 ABRIR CÂMERA PARA ESCANEAR QR CODE</span>
+              </Link>
+              <p className="text-[10px] font-mono text-archive-muted">
+                Aponte a câmera para a placa da bancada para liberar na hora.
+              </p>
             </div>
           </form>
         </ClassifiedCard>
