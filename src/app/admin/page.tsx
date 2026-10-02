@@ -53,35 +53,9 @@ interface AdminVisitor {
   post_trust?: number;
 }
 
-const SAMPLE_REFLECTIONS: ModerationItem[] = [
-  {
-    id: 'm1',
-    nickname: 'Detetive Leo',
-    text: 'A IA pode ajudar a sugerir tratamentos para doenças raras, mas a decisão de operar deve ser sempre médica humana.',
-    status: 'pending',
-  },
-  {
-    id: 'm2',
-    nickname: 'AGENTE #0194',
-    text: 'Não deveríamos deixar carros autônomos decidirem quem salvar em caso de acidente inevitável.',
-    status: 'approved',
-  },
-  {
-    id: 'm3',
-    nickname: 'CriptoAna',
-    text: 'Máquinas calculam padrões muito bem, mas não entendem o sofrimento ou a dignidade humana.',
-    status: 'pending',
-  },
-];
+const SAMPLE_REFLECTIONS: ModerationItem[] = [];
 
-const SAMPLE_VISITORS: AdminVisitor[] = [
-  { id: 'v1', agent_number: 104, nickname: 'AGENTE #0104', total_score: 525, completed_stations_count: 8, created_at: '15:10' },
-  { id: 'v2', agent_number: 112, nickname: 'Detetive Turing', total_score: 475, completed_stations_count: 7, created_at: '15:08' },
-  { id: 'v3', agent_number: 219, nickname: 'Engraçadinho_Da_Sala_9A', total_score: 450, completed_stations_count: 6, created_at: '15:05' },
-  { id: 'v4', agent_number: 108, nickname: 'CriptoAna', total_score: 425, completed_stations_count: 6, created_at: '15:02' },
-  { id: 'v5', agent_number: 302, nickname: 'Zezinho_Troll', total_score: 400, completed_stations_count: 5, created_at: '14:58' },
-  { id: 'v6', agent_number: 415, nickname: 'Mariana Costa (9ºB)', total_score: 350, completed_stations_count: 4, created_at: '14:55' },
-];
+const SAMPLE_VISITORS: AdminVisitor[] = [];
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
