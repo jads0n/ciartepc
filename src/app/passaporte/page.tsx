@@ -43,7 +43,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 
 export default function PassportPage() {
   const router = useRouter();
-  const { agent, completedStations, updateNickname } = useAgent();
+  const { agent, completedStations, unlockedStations, unlockStation, updateNickname } = useAgent();
   const completedCount = completedStations.length;
   const progressPercent = Math.min(100, Math.round((completedCount / 8) * 100));
 
@@ -75,9 +75,10 @@ export default function PassportPage() {
 
     const matched = findStationByCode(inputCode);
     if (matched) {
+      unlockStation(matched.slug);
       setFeedbackMsg({
         type: 'success',
-        text: `✓ Código reconhecido! Acessando Estação ${String(matched.order).padStart(2, '0')}: ${matched.title}...`,
+        text: `✓ Código reconhecido! Bancada ${String(matched.order).padStart(2, '0')}: ${matched.title} liberada...`,
       });
       setTimeout(() => {
         router.push(`/estacao/${matched.slug}`);
@@ -85,7 +86,7 @@ export default function PassportPage() {
     } else {
       setFeedbackMsg({
         type: 'error',
-        text: `✕ Código "${inputCode.toUpperCase()}" não encontrado. Verifique a placa da bancada (ex: 12AB, 23BC, 34CD...).`,
+        text: `✕ Código "${inputCode.toUpperCase()}" não encontrado. Verifique a placa física na mesa (ex: 4 caracteres).`,
       });
     }
   };
@@ -99,6 +100,7 @@ export default function PassportPage() {
     if (formatted.length === 4) {
       const matched = findStationByCode(formatted);
       if (matched) {
+        unlockStation(matched.slug);
         setFeedbackMsg({
           type: 'success',
           text: `✓ Código válido! Abrindo Estação ${String(matched.order).padStart(2, '0')}...`,
@@ -287,15 +289,12 @@ export default function PassportPage() {
         <div className="flex flex-wrap items-center justify-between text-[11px] font-mono text-archive-muted pt-1 gap-2">
           <div className="flex items-center gap-1.5 text-archive-muted">
             <QrCode className="w-3.5 h-3.5 text-turing-cyan" />
-            <span>Dica: escaneie o QR Code na mesa para abrir sem precisar digitar nada!</span>
+            <span>Dica: escaneie o QR Code na placa da mesa para abrir direto sem precisar digitar!</span>
           </div>
-          <Link
-            href="/placas"
-            className="text-turing-amber hover:underline flex items-center gap-1 font-semibold"
-          >
-            <span>[ Ver Placas & QR Codes da Feira ]</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
+          <div className="flex items-center gap-1 text-archive-500 font-mono text-[10px]">
+            <Lock className="w-3 h-3 text-turing-amber" />
+            <span>Códigos disponíveis nas bancadas físicas</span>
+          </div>
         </div>
       </div>
 
@@ -303,15 +302,16 @@ export default function PassportPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {STATIONS_DATA.map((station) => {
           const isCompleted = completedStations.includes(station.slug);
+          const isUnlocked = isCompleted || unlockedStations.includes(station.slug);
           // A estação 8 (pergunta final) desbloqueia após pelo menos 3 estações
-          const isLocked = station.slug === 'pergunta-final' && completedCount < 3;
+          const isPrerequisiteLocked = station.slug === 'pergunta-final' && completedCount < 3;
 
           return (
             <Link
               key={station.slug}
-              href={isLocked ? '#' : `/estacao/${station.slug}`}
+              href={isPrerequisiteLocked ? '#' : `/estacao/${station.slug}`}
               className={`block transition-all duration-200 ${
-                isLocked ? 'cursor-not-allowed opacity-60' : 'hover:-translate-y-0.5'
+                isPrerequisiteLocked ? 'cursor-not-allowed opacity-60' : 'hover:-translate-y-0.5'
               }`}
             >
               <ClassifiedCard
@@ -319,21 +319,27 @@ export default function PassportPage() {
                 badge={
                   isCompleted
                     ? 'CONCLUÍDA'
-                    : isLocked
+                    : isPrerequisiteLocked
                     ? 'BLOQUEADA'
-                    : 'DISPONÍVEL'
+                    : isUnlocked
+                    ? 'DESBLOQUEADA'
+                    : 'REQUER CÓDIGO'
                 }
                 badgeVariant={
                   isCompleted
                     ? 'complete'
-                    : isLocked
+                    : isPrerequisiteLocked
                     ? 'neutral'
-                    : 'amber'
+                    : isUnlocked
+                    ? 'amber'
+                    : 'neutral'
                 }
                 className={`h-full flex flex-col justify-between transition-colors ${
                   isCompleted
                     ? 'border-turing-green/40 bg-archive-850/80'
-                    : 'hover:border-turing-amber/60 hover:bg-archive-800/90'
+                    : isUnlocked
+                    ? 'border-turing-amber/50 bg-archive-850/90 hover:border-turing-amber hover:bg-archive-800'
+                    : 'border-archive-800 bg-archive-900/90 hover:border-archive-600'
                 }`}
               >
                 <div className="space-y-2">
@@ -342,9 +348,11 @@ export default function PassportPage() {
                       className={`p-2.5 rounded-sm border shrink-0 ${
                         isCompleted
                           ? 'bg-turing-green/15 text-turing-green border-turing-green/40'
-                          : isLocked
+                          : isPrerequisiteLocked
                           ? 'bg-archive-900 text-archive-500 border-archive-800'
-                          : 'bg-archive-800 text-turing-amber border-archive-700'
+                          : isUnlocked
+                          ? 'bg-archive-800 text-turing-amber border-archive-700'
+                          : 'bg-archive-950 text-archive-500 border-archive-800'
                       }`}
                     >
                       {ICON_MAP[station.icon] || <MessageSquare className="w-5 h-5" />}
@@ -362,12 +370,29 @@ export default function PassportPage() {
                     </div>
                   </div>
 
-                  {/* Código Rápido de 4 Dígitos em Destaque */}
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[10px] font-mono text-archive-muted uppercase">CÓDIGO DA BANCADA:</span>
-                    <span className="px-2 py-0.5 bg-archive-950 border border-turing-amber/40 text-turing-amber font-mono font-bold text-xs rounded-xs tracking-widest shadow-inner">
-                      {station.code}
-                    </span>
+                  {/* Status da Bancada Física (Sem expor o código) */}
+                  <div className="pt-1">
+                    {isCompleted ? (
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-turing-green">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Investigação concluída (+{station.xp} XP)</span>
+                      </div>
+                    ) : isUnlocked ? (
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-turing-amber">
+                        <Zap className="w-3.5 h-3.5 shrink-0" />
+                        <span>Bancada liberada // Pronta para responder</span>
+                      </div>
+                    ) : isPrerequisiteLocked ? (
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-archive-500">
+                        <Lock className="w-3.5 h-3.5 shrink-0" />
+                        <span>Requer {3 - completedCount} estações concluídas antes</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-archive-400">
+                        <Lock className="w-3.5 h-3.5 text-turing-amber/70 shrink-0" />
+                        <span>Vá até a bancada para ler o QR Code ou digitar código</span>
+                      </div>
+                    )}
                   </div>
 
                   <p className="text-xs text-archive-muted line-clamp-2 pt-0.5">
@@ -387,15 +412,20 @@ export default function PassportPage() {
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Revisar
                       </span>
-                    ) : isLocked ? (
+                    ) : isPrerequisiteLocked ? (
                       <span className="text-archive-500 flex items-center gap-1">
                         <Lock className="w-3.5 h-3.5" />
-                        Complete +{3 - completedCount} estações
+                        Complete +{3 - completedCount}
                       </span>
-                    ) : (
+                    ) : isUnlocked ? (
                       <span className="text-turing-amber flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                         Investigar
                         <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    ) : (
+                      <span className="text-turing-amber flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5" />
+                        Desbloquear
                       </span>
                     )}
                   </div>

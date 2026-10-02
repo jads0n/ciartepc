@@ -32,8 +32,37 @@ export function getCompletedStations(): string[] {
   }
 }
 
+const UNLOCKED_STATIONS_KEY = 'turing_lab_unlocked_stations';
+
+export function getUnlockedStations(): string[] {
+  if (typeof window === 'undefined') return [];
+  const raw = localStorage.getItem(UNLOCKED_STATIONS_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function unlockStation(stationSlug: string): void {
+  if (typeof window === 'undefined') return;
+  const unlocked = getUnlockedStations();
+  if (!unlocked.includes(stationSlug)) {
+    unlocked.push(stationSlug);
+    localStorage.setItem(UNLOCKED_STATIONS_KEY, JSON.stringify(unlocked));
+  }
+}
+
+export function isStationUnlocked(stationSlug: string): boolean {
+  if (typeof window === 'undefined') return false;
+  if (getCompletedStations().includes(stationSlug)) return true;
+  return getUnlockedStations().includes(stationSlug);
+}
+
 export function markStationCompleted(stationSlug: string): void {
   if (typeof window === 'undefined') return;
+  unlockStation(stationSlug);
   const completed = getCompletedStations();
   if (!completed.includes(stationSlug)) {
     completed.push(stationSlug);

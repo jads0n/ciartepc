@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAgent } from '@/hooks/useAgent';
-import { STATIONS_DATA } from '@/lib/constants/stations';
+import { STATIONS_DATA, findStationByCode } from '@/lib/constants/stations';
 import { ClassifiedCard } from '@/components/ui/ClassifiedCard';
 import { TerminalButton } from '@/components/ui/TerminalButton';
-import { DecryptionText } from '@/components/ui/DecryptionText';
-import { enqueueOfflineResponse } from '@/lib/storage/offline-sync';
+import { enqueueOfflineResponse, isStationUnlocked } from '@/lib/storage/offline-sync';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import {
   ArrowLeft,
@@ -16,22 +15,46 @@ import {
   CheckCircle2,
   Award,
   Sparkles,
-  HelpCircle,
-  Share2,
+  Lock,
+  Zap,
+  QrCode,
+  AlertTriangle,
+  ShieldCheck,
 } from 'lucide-react';
 
-export default function StationPage() {
+function StationContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slug = params?.slug as string;
+  const codeParam = searchParams.get('code');
 
   const station = STATIONS_DATA.find((s) => s.slug === slug);
-  const { agent, completedStations, completeStation } = useAgent();
+  const { agent, completedStations, unlockedStations, unlockStation, completeStation } = useAgent();
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [influenceFactor, setInfluenceFactor] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(() => completedStations.includes(slug));
+
+  // Estados de Desbloqueio da Bancada
+  const [gateInput, setGateInput] = useState('');
+  const [gateError, setGateError] = useState<string | null>(null);
+  const [unlockedJustNow, setUnlockedJustNow] = useState(false);
+
+  // Se veio por QR Code com ?code=XXXX, desbloqueia automaticamente
+  useEffect(() => {
+    if (codeParam && station && codeParam.toUpperCase() === station.code.toUpperCase()) {
+      unlockStation(station.slug);
+      setUnlockedJustNow(true);
+    }
+  }, [codeParam, station, unlockStation]);
+
+  useEffect(() => {
+    if (completedStations.includes(slug)) {
+      setHasAnswered(true);
+    }
+  }, [completedStations, slug]);
 
   if (!station) {
     return (
@@ -45,6 +68,186 @@ export default function StationPage() {
     );
   }
 
+  // A estação 8 (pergunta final) desbloqueia após pelo menos 3 estações concluídas
+  const isPrerequisiteLocked = slug === 'pergunta-final' && completedStations.length < 3;
+  if (isPrerequisiteLocked) {
+    return (
+      <div className="max-w-xl mx-auto py-12 px-4 space-y-6">
+        <div className="flex items-center justify-between text-xs font-mono">
+          <Link
+            href="/passaporte"
+            className="text-archive-muted hover:text-archive-paper flex items-center gap-1.5 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>[ VOLTAR AO PASSAPORTE ]</span>
+          </Link>
+        </div>
+        <ClassifiedCard
+          title="ACESSO BLOQUEADO // PRÉ-REQUISITO"
+          badge="BLOQUEADA"
+          badgeVariant="neutral"
+          className="text-center space-y-4 py-6"
+        >
+          <div className="w-14 h-14 rounded-full bg-archive-800 border border-archive-700 mx-auto flex items-center justify-center text-archive-500">
+            <Lock className="w-7 h-7 text-turing-amber" />
+          </div>
+          <h1 className="text-xl font-mono font-bold text-archive-paper">
+            ESTAÇÃO 08: {station.title}
+          </h1>
+          <p className="text-xs sm:text-sm text-archive-muted max-w-md mx-auto">
+            A Pergunta Final consolida toda a sua experiência no laboratório. Conclua pelo menos 3 outras estações para desbloquear esta bancada.
+          </p>
+          <div className="py-2 px-4 bg-archive-950 border border-archive-800 rounded-sm inline-block font-mono text-xs text-turing-amber">
+            Progresso Atual: {completedStations.length} / 3 concluídas
+          </div>
+          <div className="pt-2">
+            <Link href="/passaporte">
+              <TerminalButton variant="primary" size="md">
+                <span>VER ESTAÇÕES NO PASSAPORTE</span>
+                <ArrowRight className="w-4 h-4" />
+              </TerminalButton>
+            </Link>
+          </div>
+        </ClassifiedCard>
+      </div>
+    );
+  }
+
+  // Verifica se a estação está desbloqueada
+  const isUnlocked =
+    hasAnswered ||
+    completedStations.includes(slug) ||
+    unlockedStations.includes(slug) ||
+    unlockedJustNow ||
+    (typeof window !== 'undefined' && isStationUnlocked(slug)) ||
+    (codeParam && codeParam.toUpperCase() === station.code.toUpperCase());
+
+  const handleGateUnlock = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const clean = gateInput.trim().toUpperCase();
+    if (!clean) return;
+
+    if (clean === station.code.toUpperCase()) {
+      unlockStation(station.slug);
+      setUnlockedJustNow(true);
+      setGateError(null);
+    } else {
+      const otherStation = findStationByCode(clean);
+      if (otherStation) {
+        setGateError(`Este código pertence à Estação ${otherStation.order} (${otherStation.title}). Procure a placa na mesa da Estação ${station.order}!`);
+      } else {
+        setGateError(`Código "${clean}" incorreto. Verifique a placa de 4 dígitos na mesa desta estação.`);
+      }
+    }
+  };
+
+  const handleGateInputChange = (val: string) => {
+    const formatted = val.toUpperCase().trim();
+    setGateInput(formatted);
+    setGateError(null);
+
+    // Validação automática ao digitar 4 dígitos
+    if (formatted.length === 4) {
+      if (formatted === station.code.toUpperCase()) {
+        unlockStation(station.slug);
+        setUnlockedJustNow(true);
+      } else {
+        const otherStation = findStationByCode(formatted);
+        if (otherStation) {
+          setGateError(`Este código é da Estação ${otherStation.order} (${otherStation.title}). Procure a placa da Estação ${station.order}!`);
+        } else {
+          setGateError(`Código incorreto. Olhe a placa na mesa da Estação ${station.order}.`);
+        }
+      }
+    }
+  };
+
+  // TELA DE BLOQUEIO DE BANCADA (Requer QR Code ou Código de 4 dígitos)
+  if (!isUnlocked) {
+    return (
+      <div className="max-w-xl mx-auto py-8 px-4 space-y-6">
+        <div className="flex items-center justify-between text-xs font-mono">
+          <Link
+            href="/passaporte"
+            className="text-archive-muted hover:text-archive-paper flex items-center gap-1.5 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>[ VOLTAR AO PASSAPORTE ]</span>
+          </Link>
+          <span className="text-turing-amber font-mono text-xs">
+            ESTAÇÃO {String(station.order).padStart(2, '0')} DE 08
+          </span>
+        </div>
+
+        <ClassifiedCard
+          title="ACESSO RESTRITO // BANCADA BLOQUEADA"
+          badge="REQUER BANCADA"
+          badgeVariant="amber"
+          className="space-y-5 text-center py-4"
+        >
+          <div className="w-16 h-16 rounded-full bg-archive-950 border-2 border-turing-amber/60 mx-auto flex items-center justify-center text-turing-amber shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-1">
+            <h1 className="text-2xl font-mono font-black text-archive-paper">
+              {station.title}
+            </h1>
+            <p className="text-xs font-mono text-turing-amber">
+              {station.subtitle}
+            </p>
+          </div>
+
+          <div className="p-3 bg-archive-950/80 border-l-2 border-turing-amber rounded-r-sm text-xs text-archive-paper/90 leading-relaxed font-sans text-left">
+            Esta estação requer que você esteja presencialmente na bancada de experimentos.
+            Para liberar os desafios e responder, escaneie a placa QR Code na mesa ou digite abaixo o código de 4 dígitos:
+          </div>
+
+          <form onSubmit={handleGateUnlock} className="space-y-4 max-w-sm mx-auto pt-2">
+            <div className="space-y-1 text-left">
+              <label className="text-[11px] font-mono text-archive-muted block">
+                CÓDIGO DE 4 DÍGITOS DA BANCADA:
+              </label>
+              <input
+                type="text"
+                maxLength={4}
+                value={gateInput}
+                onChange={(e) => handleGateInputChange(e.target.value)}
+                placeholder="____"
+                autoFocus
+                className="w-full text-center tracking-[0.35em] text-2xl font-mono font-bold bg-archive-950 border-2 border-turing-amber/70 focus:border-turing-amber text-turing-amber rounded-sm py-3 px-4 uppercase outline-none shadow-inner transition-colors"
+              />
+            </div>
+
+            {gateError && (
+              <div className="p-2.5 bg-turing-red/15 border border-turing-red/40 text-turing-red font-mono text-xs rounded-xs flex items-center gap-2 text-left">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{gateError}</span>
+              </div>
+            )}
+
+            <TerminalButton
+              type="submit"
+              variant="primary"
+              size="lg"
+              fullWidth
+              disabled={gateInput.trim().length === 0}
+            >
+              <Zap className="w-4 h-4" />
+              <span>DESBLOQUEAR BANCADA</span>
+            </TerminalButton>
+
+            <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-archive-muted pt-2 border-t border-archive-800">
+              <QrCode className="w-3.5 h-3.5 text-turing-cyan" />
+              <span>Dica: aponte a câmera do celular no QR Code da bancada para abrir direto!</span>
+            </div>
+          </form>
+        </ClassifiedCard>
+      </div>
+    );
+  }
+
+  // TELA PRINCIPAL DA ESTAÇÃO DESBLOQUEADA
   const handleConfirmAnswer = async () => {
     if (!selectedOption || !agent) return;
 
@@ -95,8 +298,9 @@ export default function StationPage() {
           <span>[ PASSAPORTE ]</span>
         </Link>
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-archive-900 border border-turing-amber/40 text-turing-amber text-[10px] font-mono font-bold rounded-xs tracking-wider">
-            CÓDIGO: {station.code}
+          <span className="px-2 py-0.5 bg-turing-green/15 border border-turing-green/40 text-turing-green text-[10px] font-mono font-bold rounded-xs tracking-wider flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" />
+            BANCADA LIBERADA
           </span>
           <span className="text-turing-amber font-semibold">
             ESTAÇÃO {String(station.order).padStart(2, '0')} DE 08
@@ -263,5 +467,19 @@ export default function StationPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function StationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-2xl mx-auto py-16 text-center font-mono text-xs text-archive-muted">
+          Carregando dados da estação...
+        </div>
+      }
+    >
+      <StationContent />
+    </Suspense>
   );
 }

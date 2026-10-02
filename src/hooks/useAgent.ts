@@ -2,12 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Visitor, OpinionOption } from '@/types';
-import { getLocalAgent, saveLocalAgent, getCompletedStations, markStationCompleted, getOfflineQueue } from '@/lib/storage/offline-sync';
+import {
+  getLocalAgent,
+  saveLocalAgent,
+  getCompletedStations,
+  markStationCompleted,
+  getOfflineQueue,
+  getUnlockedStations,
+  unlockStation as saveUnlockStation,
+} from '@/lib/storage/offline-sync';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
 export function useAgent() {
   const [agent, setAgent] = useState<Visitor | null>(null);
   const [completedStations, setCompletedStations] = useState<string[]>([]);
+  const [unlockedStations, setUnlockedStations] = useState<string[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -24,9 +33,11 @@ export function useAgent() {
     window.addEventListener('offline', handleOffline);
 
     const saved = getLocalAgent();
+    setCompletedStations(getCompletedStations());
+    setUnlockedStations(getUnlockedStations());
+
     if (saved) {
       setAgent(saved);
-      setCompletedStations(getCompletedStations());
       setPendingSyncCount(getOfflineQueue().length);
       setIsLoading(false);
     } else {
@@ -178,12 +189,20 @@ export function useAgent() {
     });
   }, []);
 
+  // Desbloquear Estação por QR code ou código de 4 dígitos
+  const unlockStation = useCallback((slug: string) => {
+    saveUnlockStation(slug);
+    setUnlockedStations((prev) => (prev.includes(slug) ? prev : [...prev, slug]));
+  }, []);
+
   return {
     agent,
     isLoading,
     isOnline,
     pendingSyncCount,
     completedStations,
+    unlockedStations,
+    unlockStation,
     updateNickname,
     addScore,
     completeStation,
