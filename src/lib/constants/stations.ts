@@ -200,6 +200,17 @@ export const STATIONS_DATA: LocalStationData[] = [
   },
 ];
 
+export const STATION_UUID_MAP: Record<string, string> = {
+  'turing': '3b922472-cc81-4457-b613-bdd41346d7a0',
+  'carrinhos': 'cb4a8ffa-6d7c-412b-be1e-0deb0529761f',
+  'aprendizado': 'fcf693f5-99aa-43f7-94f5-8a7b4a02d873',
+  'engane-a-ia': '1f43e47f-3bda-4369-9d7a-41bd91f40874',
+  'real-ou-ia': '759f8319-5cf4-4875-8555-61c55f0827bc',
+  'confianca-etica': '520c7ae0-6e5e-45cc-bbdc-26a97c8be31b',
+  'auditoria': '9ef2446a-59f4-476e-a0f2-2376e70fa707',
+  'pergunta-final': '8b6970d2-a3a3-4ad8-80b1-d8ce05ef6c94',
+};
+
 /**
  * Busca uma estação pelo código de 4 dígitos ou alternativos
  */
@@ -216,3 +227,9 @@ export function findStationByCode(inputCode: string): LocalStationData | undefin
     return false;
   });
 }
+
+export function getStationUuid(slug: string): string {
+  return STATION_UUID_MAP[slug] || STATION_UUID_MAP['turing'];
+}
+
+

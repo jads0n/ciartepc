@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAgent } from '@/hooks/useAgent';
-import { STATIONS_DATA, findStationByCode } from '@/lib/constants/stations';
+import { STATIONS_DATA, findStationByCode, getStationUuid } from '@/lib/constants/stations';
 import { ClassifiedCard } from '@/components/ui/ClassifiedCard';
 import { TerminalButton } from '@/components/ui/TerminalButton';
 import { enqueueOfflineResponse, isStationUnlocked } from '@/lib/storage/offline-sync';
@@ -263,11 +263,11 @@ function StationContent() {
     const chosenOptionObj = station.options.find((o) => o.value === selectedOption);
     const isCorrect = chosenOptionObj?.isCorrect ?? true;
 
-    // Enviar ou enfileirar resposta
+    // Enviar ou enfileirar resposta com UUID válido da estação
     const responsePayload = {
       visitor_id: agent.id,
-      station_id: station.slug,
-      question_id: `q-${station.slug}`,
+      station_id: getStationUuid(station.slug),
+      question_id: null,
       selected_option: selectedOption,
       is_correct: isCorrect,
       is_kiosk_vote: false,

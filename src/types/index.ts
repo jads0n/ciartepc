@@ -47,9 +47,9 @@ export interface Question {
 
 export interface StationResponse {
   id?: string;
-  visitor_id: string;
+  visitor_id?: string | null;
   station_id: string;
-  question_id: string;
+  question_id?: string | null;
   selected_option: string;
   is_correct: boolean;
   is_kiosk_vote?: boolean;
@@ -115,5 +115,6 @@ export interface AggregatedStats {
     nickname: string;
     total_score: number;
     agent_number: number;
+    completed_stations_count?: number;
   }[];
 }

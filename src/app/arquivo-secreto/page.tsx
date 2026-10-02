@@ -24,6 +24,7 @@ import {
   Zap,
   HelpCircle,
 } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import confetti from 'canvas-confetti';
 
 const SOLVED_SLOTS_STORAGE_KEY = 'turing_lab_solved_crypto_slots';
@@ -110,6 +111,26 @@ export default function SecretArchivePage() {
     if (HISTORICAL_SECRETS[normalized]) {
       setUnlockedCodes((prev) => [...prev, normalized]);
       addScore(HISTORICAL_SECRETS[normalized].xp);
+
+      if (isSupabaseConfigured() && agent) {
+        supabase
+          .from('responses')
+          .insert([
+            {
+              visitor_id: agent.id,
+              station_id: 'arquivo-secreto-historico',
+              question_id: `secret-${normalized}`,
+              selected_option: normalized,
+              is_correct: true,
+              is_kiosk_vote: false,
+              created_at: new Date().toISOString(),
+            },
+          ])
+          .then(({ error }) => {
+            if (error) console.warn('Supabase secret response log error:', error.message);
+          });
+      }
+
       setCodeInput('');
       setErrorMsg('');
 
@@ -134,6 +155,26 @@ export default function SecretArchivePage() {
     if (normalizedGuess === normalizedTarget) {
       // Sucesso! Concede o super boost de +250 XP
       addScore(challenge.xpReward);
+
+      // Registra a resposta no Supabase para aparecer no log em tempo real do telão
+      if (isSupabaseConfigured() && agent) {
+        supabase
+          .from('responses')
+          .insert([
+            {
+              visitor_id: agent.id,
+              station_id: 'arquivo-secreto',
+              question_id: `crypto-slot-${challenge.slotId}`,
+              selected_option: normalizedGuess,
+              is_correct: true,
+              is_kiosk_vote: false,
+              created_at: new Date().toISOString(),
+            },
+          ])
+          .then(({ error }) => {
+            if (error) console.warn('Supabase crypto response log error:', error.message);
+          });
+      }
 
       const updatedSlots = [...solvedSlots, challenge.slotId];
       setSolvedSlots(updatedSlots);
@@ -169,10 +210,17 @@ export default function SecretArchivePage() {
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>[ PASSAPORTE ]</span>
         </Link>
-        <span className="text-xs font-mono text-turing-red font-semibold uppercase flex items-center gap-1">
-          <Radio className="w-3.5 h-3.5 text-turing-red animate-pulse" />
-          <span>SALA DE CRIPTOGRAFIA</span>
-        </span>
+        <div className="flex items-center gap-3">
+          <div className="px-2.5 py-1 bg-archive-950 border border-turing-amber/50 rounded-sm font-mono text-xs text-turing-amber flex items-center gap-1.5 shadow-sm">
+            <Award className="w-3.5 h-3.5 text-turing-amber" />
+            <span className="text-archive-muted text-[10px] uppercase">Seus Pontos:</span>
+            <span className="font-bold text-turing-amber">+{agent?.total_score || 0} XP</span>
+          </div>
+          <span className="text-xs font-mono text-turing-red font-semibold uppercase flex items-center gap-1">
+            <Radio className="w-3.5 h-3.5 text-turing-red animate-pulse" />
+            <span className="hidden sm:inline">SALA DE CRIPTOGRAFIA</span>
+          </span>
+        </div>
       </div>
 
       <div>

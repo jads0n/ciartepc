@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { AggregatedStats } from '@/types';
 import {
@@ -162,58 +162,142 @@ export default function LiveDashboardPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Conexão Realtime com Supabase
-  useEffect(() => {
+  // Busca de ranking ao vivo e contadores reais do Supabase
+  const fetchLiveLeaderboardAndStats = useCallback(async () => {
     if (!isSupabaseConfigured()) return;
 
-    const channel = supabase
-      .channel('live-realtime-feed-v3')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'responses' }, (payload) => {
-        setStats((prev) => ({
-          ...prev,
-          totalResponses: prev.totalResponses + 1,
+    try {
+      // 1. Buscar os visitantes reais ordenados pela pontuação (do maior para o menor)
+      const { data: realVisitors, error: vError } = await supabase
+        .from('visitors')
+        .select('id, nickname, agent_number, total_score, completed_stations_count')
+        .order('total_score', { ascending: false })
+        .limit(10);
+
+      // 2. Contagem exata de visitantes
+      const { count: visitorCount } = await supabase
+        .from('visitors')
+        .select('*', { count: 'exact', head: true });
+
+      // 3. Contagem exata de respostas
+      const { count: responseCount } = await supabase
+        .from('responses')
+        .select('*', { count: 'exact', head: true });
+
+      if (!vError && realVisitors && realVisitors.length > 0) {
+        const mappedTopAgents = realVisitors.map((v) => ({
+          nickname: v.nickname || `AGENTE #${v.agent_number || 100}`,
+          total_score: v.total_score || 0,
+          agent_number: v.agent_number || 100,
+          completed_stations_count: v.completed_stations_count || 0,
         }));
 
+        setStats((prev) => ({
+          ...prev,
+          totalVisitors: visitorCount !== null && visitorCount > 0 ? visitorCount : prev.totalVisitors,
+          totalResponses: responseCount !== null && responseCount > 0 ? responseCount : prev.totalResponses,
+          topAgents: mappedTopAgents,
+        }));
+      } else if (visitorCount !== null && responseCount !== null) {
+        setStats((prev) => ({
+          ...prev,
+          totalVisitors: visitorCount > 0 ? visitorCount : prev.totalVisitors,
+          totalResponses: responseCount > 0 ? responseCount : prev.totalResponses,
+        }));
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar dados ao vivo:', err);
+    }
+  }, []);
+
+  // Conexão Realtime e Polling contínuo com Supabase
+  useEffect(() => {
+    fetchLiveLeaderboardAndStats();
+
+    // Polling a cada 3.5 segundos para garantir que qualquer pontuação atualize instantaneamente
+    const pollInterval = setInterval(fetchLiveLeaderboardAndStats, 3500);
+
+    if (!isSupabaseConfigured()) return () => clearInterval(pollInterval);
+
+    const channel = supabase
+      .channel('live-realtime-feed-v5')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'visitors' }, (payload) => {
+        // Atualiza a tabela de líderes imediatamente
+        fetchLiveLeaderboardAndStats();
+
         const now = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+        if (payload.eventType === 'UPDATE') {
+          const oldScore = (payload.old as { total_score?: number })?.total_score || 0;
+          const newScore = (payload.new as { total_score?: number; nickname?: string })?.total_score || 0;
+          const nick = (payload.new as { nickname?: string })?.nickname || 'Agente';
+          const diff = newScore - oldScore;
+
+          if (diff > 0) {
+            const newLog: LiveLogItem = {
+              id: Math.random().toString(),
+              time: now,
+              agent: nick,
+              station: 'RANKING',
+              detail: `+${diff} XP conquistados! (Total: ${newScore} XP)`,
+              type: 'unlock',
+            };
+            setLogs((prev) => [newLog, ...prev.slice(0, 7)]);
+            setLatestToast(`RANKING: ${nick} subiu com +${diff} XP!`);
+            setTimeout(() => setLatestToast(null), 3500);
+          }
+        } else if (payload.eventType === 'INSERT') {
+          const nick = (payload.new as { nickname?: string })?.nickname || 'NOVO AGENTE';
+          const newLog: LiveLogItem = {
+            id: Math.random().toString(),
+            time: now,
+            agent: nick,
+            station: 'PASSAPORTE',
+            detail: 'Novo investigador ingressou no laboratório',
+            type: 'agent',
+          };
+          setLogs((prev) => [newLog, ...prev.slice(0, 7)]);
+          setLatestToast(`NOVO AGENTE: ${nick} entrou no Turing Lab!`);
+          setTimeout(() => setLatestToast(null), 3500);
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'responses' }, (payload) => {
+        fetchLiveLeaderboardAndStats();
+
+        const now = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+        const stationId = String(payload.new?.station_id || '');
+        let detail = 'Resposta registrada na bancada';
+        let stationLabel = `ESTAÇÃO ${stationId.toUpperCase()}`;
+
+        if (stationId === 'arquivo-secreto') {
+          stationLabel = 'ARQUIVO SECRETO';
+          detail = 'Decifrou o Enigma Bletchley (+250 XP)!';
+        } else if (stationId === 'arquivo-secreto-historico') {
+          stationLabel = 'ARQUIVO SECRETO';
+          detail = 'Decifrou código histórico confidencial!';
+        }
+
         const newLog: LiveLogItem = {
           id: Math.random().toString(),
           time: now,
           agent: `AGENTE #${Math.floor(100 + Math.random() * 900)}`,
-          station: `ESTAÇÃO ${String(payload.new?.station_id || '01').toUpperCase()}`,
-          detail: 'Voto registrado no sistema',
-          type: 'vote',
+          station: stationLabel,
+          detail,
+          type: stationId.includes('secreto') ? 'unlock' : 'vote',
         };
 
         setLogs((prev) => [newLog, ...prev.slice(0, 7)]);
-        setLatestToast('NOVA RESPOSTA REGISTRADA EM UMA DAS BANCADAS!');
-        setTimeout(() => setLatestToast(null), 3500);
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'visitors' }, (payload) => {
-        setStats((prev) => ({
-          ...prev,
-          totalVisitors: prev.totalVisitors + 1,
-        }));
-
-        const now = new Date().toLocaleTimeString('pt-BR', { hour12: false });
-        const newLog: LiveLogItem = {
-          id: Math.random().toString(),
-          time: now,
-          agent: payload.new?.nickname || 'NOVO AGENTE',
-          station: 'PASSAPORTE',
-          detail: 'Novo investigador ingressou no laboratório',
-          type: 'agent',
-        };
-
-        setLogs((prev) => [newLog, ...prev.slice(0, 7)]);
-        setLatestToast('UM NOVO AGENTE INGRESSOU NO TURING LAB!');
-        setTimeout(() => setLatestToast(null), 3500);
+        if (stationId.includes('secreto')) {
+          setLatestToast('CÓDIGO SECRETO DECIFRADO NO LABORATÓRIO! (+250 XP)');
+          setTimeout(() => setLatestToast(null), 4000);
+        }
       })
       .subscribe();
 
     return () => {
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchLiveLeaderboardAndStats]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -426,38 +510,38 @@ export default function LiveDashboardPage() {
                   {/* Destaque Líder #1 */}
                   {stats.topAgents[0] && (
                     <div className="p-4 bg-gradient-to-r from-turing-amber/20 via-archive-900 to-archive-950 border-2 border-turing-amber rounded-sm flex items-center justify-between gap-4 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
-                      <div className="flex items-center gap-3.5">
+                      <div className="flex items-center gap-3.5 min-w-0">
                         <div className="w-12 h-12 rounded-sm bg-turing-amber text-archive-950 flex items-center justify-center font-mono text-xl font-black shrink-0 shadow-md">
                           <Crown className="w-7 h-7" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-lg font-black text-archive-paper">
+                            <span className="font-mono text-lg font-black text-archive-paper truncate">
                               {stats.topAgents[0].nickname}
                             </span>
-                            <span className="px-2 py-0.5 bg-turing-amber text-archive-950 font-mono text-[10px] font-black rounded-xs uppercase">
+                            <span className="px-2 py-0.5 bg-turing-amber text-archive-950 font-mono text-[10px] font-black rounded-xs uppercase shrink-0">
                               1º LUGAR
                             </span>
                           </div>
                           <div className="text-xs font-mono text-archive-muted mt-0.5">
-                            Convocado #{stats.topAgents[0].agent_number} • Arquivo Bletchley Decifrado
+                            Convocado #{stats.topAgents[0].agent_number} • {stats.topAgents[0].completed_stations_count || 0} de 8 Estações Concluídas
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <div className="text-2xl font-mono font-black text-turing-amber">
                           {stats.topAgents[0].total_score} XP
                         </div>
                         <div className="text-[10px] font-mono text-turing-green font-semibold">
-                          8/8 ESTAÇÕES
+                          {stats.topAgents[0].completed_stations_count || 0}/8 ESTAÇÕES
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* 2º ao 5º Lugares */}
+                  {/* 2º ao 6º Lugares */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {stats.topAgents.slice(1, 5).map((agent, idx) => (
+                    {stats.topAgents.slice(1, 6).map((agent, idx) => (
                       <div
                         key={idx}
                         className="p-3 bg-archive-950 border border-archive-800 rounded-sm flex items-center justify-between gap-3 font-mono"
@@ -478,9 +562,14 @@ export default function LiveDashboardPage() {
                             {agent.nickname}
                           </span>
                         </div>
-                        <span className="font-bold text-turing-amber text-sm shrink-0">
-                          {agent.total_score} XP
-                        </span>
+                        <div className="text-right shrink-0">
+                          <div className="font-bold text-turing-amber text-sm">
+                            {agent.total_score} XP
+                          </div>
+                          <div className="text-[10px] text-archive-500 font-normal">
+                            {agent.completed_stations_count || 0}/8 Estações
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

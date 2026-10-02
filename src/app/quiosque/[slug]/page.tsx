@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { STATIONS_DATA } from '@/lib/constants/stations';
+import { STATIONS_DATA, getStationUuid } from '@/lib/constants/stations';
 import { ClassifiedCard } from '@/components/ui/ClassifiedCard';
 import { TerminalButton } from '@/components/ui/TerminalButton';
 import { enqueueOfflineResponse } from '@/lib/storage/offline-sync';
@@ -70,11 +70,11 @@ export default function KioskStationPage() {
     const chosenOptionObj = station.options.find((o) => o.value === optionValue);
     const isCorrect = chosenOptionObj?.isCorrect ?? true;
 
-    // Registra voto de quiosque anônimo
+    // Registra voto de quiosque anônimo com UUID da estação
     const kioskResponse = {
-      visitor_id: `kiosk-${slug}-${Date.now()}`,
-      station_id: station.slug,
-      question_id: `q-${station.slug}`,
+      visitor_id: null,
+      station_id: getStationUuid(station.slug),
+      question_id: null,
       selected_option: optionValue,
       is_correct: isCorrect,
       is_kiosk_vote: true,
