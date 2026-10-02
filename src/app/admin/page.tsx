@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ClassifiedCard } from '@/components/ui/ClassifiedCard';
 import { TerminalButton } from '@/components/ui/TerminalButton';
@@ -47,6 +47,10 @@ interface AdminVisitor {
   total_score: number;
   completed_stations_count: number;
   created_at?: string;
+  pre_opinion?: string;
+  pre_trust?: number;
+  post_opinion?: string;
+  post_trust?: number;
 }
 
 const SAMPLE_REFLECTIONS: ModerationItem[] = [
@@ -91,42 +95,81 @@ export default function AdminPage() {
   const [liveRotation, setLiveRotation] = useState('15');
 
   // Moderação de Reflexões
-  const [reflections, setReflections] = useState<ModerationItem[]>(SAMPLE_REFLECTIONS);
+  const [reflections, setReflections] = useState<ModerationItem[]>([]);
 
   // Moderação de Nomes / Agentes
-  const [visitors, setVisitors] = useState<AdminVisitor[]>(SAMPLE_VISITORS);
+  const [visitors, setVisitors] = useState<AdminVisitor[]>([]);
   const [visitorSearch, setVisitorSearch] = useState('');
   const [editingVisitorId, setEditingVisitorId] = useState<string | null>(null);
   const [editNickDraft, setEditNickDraft] = useState('');
   const [actionToast, setActionToast] = useState<string | null>(null);
 
-  // Limpeza de Testes com Trava
+  // Estados de Carregamento e Reset
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
 
-  // Carregar dados de visitantes do Supabase se configurado
-  useEffect(() => {
-    if (!isAuthenticated || !isSupabaseConfigured()) return;
+  // Carregar dados de visitantes e reflexões do Supabase
+  const loadAdminData = useCallback(async () => {
+    if (!isSupabaseConfigured()) {
+      setVisitors(SAMPLE_VISITORS);
+      setReflections(SAMPLE_REFLECTIONS);
+      return;
+    }
 
-    supabase
-      .from('visitors')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (!error && data && data.length > 0) {
-          setVisitors(
-            data.map((v) => ({
-              id: v.id,
-              agent_number: v.agent_number || 100,
-              nickname: v.nickname || `AGENTE #${v.agent_number}`,
-              total_score: v.total_score || 0,
-              completed_stations_count: v.completed_stations_count || 0,
-              created_at: v.created_at ? new Date(v.created_at).toLocaleTimeString('pt-BR', { hour12: false, hour: '2-digit', minute: '2-digit' }) : undefined,
-            }))
-          );
-        }
-      });
-  }, [isAuthenticated]);
+    setIsLoading(true);
+    try {
+      const [visRes, refRes] = await Promise.all([
+        supabase.from('visitors').select('*').order('created_at', { ascending: false }),
+        supabase.from('open_reflections').select('*').order('created_at', { ascending: false }),
+      ]);
+
+      if (!visRes.error && visRes.data) {
+        setVisitors(
+          visRes.data.map((v) => ({
+            id: v.id,
+            agent_number: v.agent_number || 100,
+            nickname: v.nickname || `AGENTE #${v.agent_number}`,
+            total_score: v.total_score || 0,
+            completed_stations_count: v.completed_stations_count || 0,
+            created_at: v.created_at
+              ? new Date(v.created_at).toLocaleTimeString('pt-BR', { hour12: false, hour: '2-digit', minute: '2-digit' })
+              : undefined,
+            pre_opinion: v.pre_opinion,
+            pre_trust: v.pre_trust,
+            post_opinion: v.post_opinion,
+            post_trust: v.post_trust,
+          }))
+        );
+      } else {
+        setVisitors([]);
+      }
+
+      if (!refRes.error && refRes.data) {
+        setReflections(
+          refRes.data.map((r) => ({
+            id: r.id,
+            nickname: r.nickname || 'Anônimo',
+            text: r.reflection_text || '',
+            status: (r.status as 'pending' | 'approved' | 'rejected') || 'pending',
+          }))
+        );
+      } else {
+        setReflections([]);
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar dados do admin:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadAdminData();
+    }
+  }, [isAuthenticated, loadAdminData]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,6 +245,10 @@ export default function AdminPage() {
 
     if (isSupabaseConfigured()) {
       try {
+        await supabase.from('responses').delete().eq('visitor_id', visitorId);
+        await supabase.from('open_reflections').delete().eq('visitor_id', visitorId);
+        await supabase.from('project_reactions').delete().eq('visitor_id', visitorId);
+        await supabase.from('visitor_unlocks').delete().eq('visitor_id', visitorId);
         await supabase.from('visitors').delete().eq('id', visitorId);
       } catch (err) {
         console.warn('Erro ao excluir no Supabase:', err);
@@ -211,43 +258,161 @@ export default function AdminPage() {
     showToast(`✓ Cadastro de "${currentNick}" excluído com sucesso.`);
   };
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
     setReflections((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: 'approved' } : r))
     );
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('open_reflections').update({ status: 'approved' }).eq('id', id);
+      } catch (err) {
+        console.warn('Erro ao aprovar reflexão no Supabase:', err);
+      }
+    }
     showToast('✓ Reflexão aprovada para exibição no telão.');
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     setReflections((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: 'rejected' } : r))
     );
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('open_reflections').update({ status: 'rejected' }).eq('id', id);
+      } catch (err) {
+        console.warn('Erro ao ocultar reflexão no Supabase:', err);
+      }
+    }
     showToast('✕ Reflexão ocultada do telão.');
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
+    let exportVisitors = visitors;
+    if (isSupabaseConfigured()) {
+      try {
+        const { data } = await supabase
+          .from('visitors')
+          .select('*')
+          .order('agent_number', { ascending: true });
+        if (data && data.length > 0) {
+          exportVisitors = data.map((v) => ({
+            id: v.id,
+            agent_number: v.agent_number || 100,
+            nickname: v.nickname || `AGENTE #${v.agent_number}`,
+            total_score: v.total_score || 0,
+            completed_stations_count: v.completed_stations_count || 0,
+            created_at: v.created_at,
+            pre_opinion: v.pre_opinion,
+            pre_trust: v.pre_trust,
+            post_opinion: v.post_opinion,
+            post_trust: v.post_trust,
+          }));
+        }
+      } catch (err) {
+        console.warn('Erro ao buscar visitantes para exportar:', err);
+      }
+    }
+
+    if (exportVisitors.length === 0) {
+      showToast('Aviso: Nenhum dado de visitante registrado ainda para exportar.');
+      return;
+    }
+
+    const headers = [
+      'ID_Agente',
+      'Numero_Agente',
+      'Codinome',
+      'Pontos_XP',
+      'Estacoes_Concluidas',
+      'Pre_Opiniao',
+      'Pre_Confianca',
+      'Post_Opiniao',
+      'Post_Confianca',
+      'Data_Cadastro',
+    ];
+
+    const rows = exportVisitors.map((v) => [
+      v.id,
+      v.agent_number,
+      `"${(v.nickname || '').replace(/"/g, '""')}"`,
+      v.total_score,
+      v.completed_stations_count,
+      v.pre_opinion || 'NAO_INFORMADO',
+      v.pre_trust ?? 'NAO_INFORMADO',
+      v.post_opinion || 'NAO_INFORMADO',
+      v.post_trust ?? 'NAO_INFORMADO',
+      v.created_at ? `"${v.created_at}"` : 'NAO_INFORMADO',
+    ]);
+
     const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      'ID,Codinome,Pontos_XP,Pre_Opiniao,Pre_Confianca,Post_Opiniao,Post_Confianca,Estacoes_Concluidas\n' +
-      '1,AGENTE #0104,525,SIM,7,DEPENDE,6,8\n' +
-      '2,Detetive Turing,475,NAO,4,DEPENDE,5,8\n' +
-      '3,AGENTE #0219,450,NAO_SEI,8,SIM,7,7\n' +
-      '4,CriptoAna,425,SIM,9,NAO,4,6\n';
+      'data:text/csv;charset=utf-8,\uFEFF' +
+      [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', 'turing_lab_respostas_feira2026.csv');
+    link.setAttribute('download', `turing_lab_visitantes_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    showToast(`✓ Relatório CSV gerado com ${exportVisitors.length} visitantes.`);
   };
 
-  const handleClearTestData = () => {
-    if (resetConfirmText.trim().toUpperCase() === 'CONFIRMAR-RESET') {
+  const handleClearTestData = async () => {
+    if (resetConfirmText.trim().toUpperCase() !== 'CONFIRMAR-RESET') return;
+    setIsResetting(true);
+
+    try {
+      if (isSupabaseConfigured()) {
+        // 1. Apagar todas as respostas de estações
+        const { error: errResp } = await supabase
+          .from('responses')
+          .delete()
+          .neq('selected_option', '__never__');
+        if (errResp) console.warn('Aviso responses delete:', errResp);
+
+        // 2. Apagar desbloqueios e reações
+        await supabase.from('project_reactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('visitor_unlocks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        // 3. Apagar todas as reflexões do mural
+        const { error: errRef } = await supabase
+          .from('open_reflections')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+        if (errRef) console.warn('Aviso reflections delete:', errRef);
+
+        // 4. Apagar todos os visitantes cadastrados
+        const { error: errVis } = await supabase
+          .from('visitors')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+        if (errVis) console.warn('Aviso visitors delete:', errVis);
+      }
+
+      // 5. Limpar dados locais do navegador (se o próprio professor/celular foi usado para testes)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('turing_lab_agent');
+        localStorage.removeItem('turing_lab_completed_stations');
+        localStorage.removeItem('turing_lab_unlocked_stations');
+        localStorage.removeItem('turing_lab_solved_crypto_slots');
+        localStorage.removeItem('turing_lab_offline_queue');
+        localStorage.removeItem('turing_lab_offline_responses');
+      }
+
+      // 6. Atualizar estado visual
+      setVisitors([]);
+      setReflections([]);
       setResetSuccess(true);
       setResetConfirmText('');
-      setTimeout(() => setResetSuccess(false), 4000);
+      showToast('✓ BANCO DE DADOS LIMPO! Todos os testes foram apagados. Pronto para os visitantes reais!');
+      setTimeout(() => setResetSuccess(false), 5000);
+    } catch (err) {
+      console.error('Erro ao resetar dados:', err);
+      showToast('✕ Ocorreu um erro ao limpar os dados do banco.');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -378,24 +543,44 @@ export default function AdminPage() {
             </p>
           </div>
 
-          {/* Campo de Busca Rápida */}
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-archive-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={visitorSearch}
-              onChange={(e) => setVisitorSearch(e.target.value)}
-              placeholder="Buscar nome ou #..."
-              className="w-full bg-archive-950 border border-archive-700 text-xs font-mono text-archive-paper pl-8 pr-3 py-1.5 rounded-xs outline-none focus:border-turing-amber"
-            />
+          {/* Campo de Busca Rápida & Botão Recarregar */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-archive-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={visitorSearch}
+                onChange={(e) => setVisitorSearch(e.target.value)}
+                placeholder="Buscar nome ou #..."
+                className="w-full bg-archive-950 border border-archive-700 text-xs font-mono text-archive-paper pl-8 pr-3 py-1.5 rounded-xs outline-none focus:border-turing-amber"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => loadAdminData()}
+              disabled={isLoading}
+              className="p-2 bg-archive-900 hover:bg-archive-800 border border-archive-700 text-archive-paper rounded-xs transition-colors cursor-pointer shrink-0"
+              title="Recarregar dados do banco"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-turing-amber' : ''}`} />
+            </button>
           </div>
         </div>
 
         {/* Lista de Visitantes / Agentes */}
         <div className="space-y-2">
           {filteredVisitors.length === 0 ? (
-            <div className="text-center py-6 text-xs font-mono text-archive-muted">
-              Nenhum agente encontrado com o termo "{visitorSearch}".
+            <div className="text-center py-8 text-xs font-mono text-archive-muted border border-dashed border-archive-800 rounded-sm bg-archive-950/40">
+              {visitorSearch ? (
+                `Nenhum agente encontrado com o termo "${visitorSearch}".`
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-archive-paper font-bold">Nenhum agente registrado no laboratório ainda.</p>
+                  <p className="text-[11px] text-archive-500">
+                    O banco de dados está limpo e pronto para receber os alunos da feira!
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             filteredVisitors.map((vis) => {
@@ -535,47 +720,53 @@ export default function AdminPage() {
         </p>
 
         <div className="space-y-3">
-          {reflections.map((item) => (
-            <div
-              key={item.id}
-              className="p-3 bg-archive-950 border border-archive-800 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-turing-amber">{item.nickname}</span>
-                  <span
-                    className={`font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-xs uppercase ${
-                      item.status === 'approved'
-                        ? 'bg-turing-green/20 text-turing-green border border-turing-green/40'
-                        : item.status === 'rejected'
-                        ? 'bg-turing-red/20 text-turing-red border border-turing-red/40'
-                        : 'bg-archive-800 text-archive-muted border border-archive-700'
-                    }`}
-                  >
-                    {item.status}
-                  </span>
-                </div>
-                <p className="text-xs text-archive-paper/90 font-sans italic">"{item.text}"</p>
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => handleApprove(item.id)}
-                  className="px-2.5 py-1 bg-turing-green/20 hover:bg-turing-green/30 border border-turing-green/50 text-turing-green text-xs font-mono rounded-xs flex items-center gap-1 cursor-pointer"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Aprovar</span>
-                </button>
-                <button
-                  onClick={() => handleReject(item.id)}
-                  className="px-2.5 py-1 bg-turing-red/20 hover:bg-turing-red/30 border border-turing-red/50 text-turing-red text-xs font-mono rounded-xs flex items-center gap-1 cursor-pointer"
-                >
-                  <XCircle className="w-3.5 h-3.5" />
-                  <span>Ocultar</span>
-                </button>
-              </div>
+          {reflections.length === 0 ? (
+            <div className="text-center py-6 text-xs font-mono text-archive-muted border border-dashed border-archive-800 rounded-sm bg-archive-950/40">
+              Nenhuma reflexão submetida pelos visitantes ainda.
             </div>
-          ))}
+          ) : (
+            reflections.map((item) => (
+              <div
+                key={item.id}
+                className="p-3 bg-archive-950 border border-archive-800 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-turing-amber">{item.nickname}</span>
+                    <span
+                      className={`font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-xs uppercase ${
+                        item.status === 'approved'
+                          ? 'bg-turing-green/20 text-turing-green border border-turing-green/40'
+                          : item.status === 'rejected'
+                          ? 'bg-turing-red/20 text-turing-red border border-turing-red/40'
+                          : 'bg-archive-800 text-archive-muted border border-archive-700'
+                      }`}
+                    >
+                      {item.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-archive-paper/90 font-sans italic">"{item.text}"</p>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => handleApprove(item.id)}
+                    className="px-2.5 py-1 bg-turing-green/20 hover:bg-turing-green/30 border border-turing-green/50 text-turing-green text-xs font-mono rounded-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Aprovar</span>
+                  </button>
+                  <button
+                    onClick={() => handleReject(item.id)}
+                    className="px-2.5 py-1 bg-turing-red/20 hover:bg-turing-red/30 border border-turing-red/50 text-turing-red text-xs font-mono rounded-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Ocultar</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </ClassifiedCard>
 
@@ -693,7 +884,7 @@ export default function AdminPage() {
           className="space-y-3 border-turing-red/40"
         >
           <p className="text-xs text-archive-muted font-sans leading-relaxed">
-            Para apagar respostas de testes pré-evento, digite <strong>CONFIRMAR-RESET</strong> abaixo:
+            Para apagar todas as respostas de testes pré-evento e começar o evento com o banco de dados zerado, digite <strong>CONFIRMAR-RESET</strong> abaixo:
           </p>
 
           <div className="flex gap-2">
@@ -708,17 +899,24 @@ export default function AdminPage() {
               type="button"
               variant="danger"
               size="sm"
-              disabled={resetConfirmText.trim().toUpperCase() !== 'CONFIRMAR-RESET'}
+              disabled={resetConfirmText.trim().toUpperCase() !== 'CONFIRMAR-RESET' || isResetting}
               onClick={handleClearTestData}
             >
-              <span>RESETAR</span>
+              {isResetting ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>RESETANDO...</span>
+                </>
+              ) : (
+                <span>RESETAR</span>
+              )}
             </TerminalButton>
           </div>
 
           {resetSuccess && (
-            <div className="text-xs font-mono text-turing-green flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Dados de teste limpos com sucesso!</span>
+            <div className="text-xs font-mono text-turing-green flex items-center gap-1.5 p-2 bg-turing-green/10 border border-turing-green/30 rounded-xs">
+              <CheckCircle2 className="w-4 h-4 text-turing-green shrink-0" />
+              <span>Banco de dados limpo com sucesso! Pronto para os visitantes reais.</span>
             </div>
           )}
         </ClassifiedCard>

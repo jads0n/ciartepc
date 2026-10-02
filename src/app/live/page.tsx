@@ -103,6 +103,7 @@ export default function LiveDashboardPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [latestToast, setLatestToast] = useState<string | null>(null);
   const [logs, setLogs] = useState<LiveLogItem[]>(INITIAL_LOGS);
+  const [liveReflections, setLiveReflections] = useState(INITIAL_REFLECTIONS);
   const [reflectionIdx, setReflectionIdx] = useState(0);
   const [currentTimeStr, setCurrentTimeStr] = useState<string>('');
 
@@ -139,10 +140,10 @@ export default function LiveDashboardPage() {
   // Alternador de frases dos alunos
   useEffect(() => {
     const quoteTimer = setInterval(() => {
-      setReflectionIdx((prev) => (prev + 1) % INITIAL_REFLECTIONS.length);
+      setReflectionIdx((prev) => (prev + 1) % (liveReflections.length || 1));
     }, 7000);
     return () => clearInterval(quoteTimer);
-  }, []);
+  }, [liveReflections.length]);
 
   // Navegação por teclado (Setas e Espaço)
   useEffect(() => {
@@ -184,8 +185,25 @@ export default function LiveDashboardPage() {
         .from('responses')
         .select('*', { count: 'exact', head: true });
 
-      if (!vError && realVisitors && realVisitors.length > 0) {
-        const mappedTopAgents = realVisitors.map((v) => ({
+      // 4. Buscar reflexões aprovadas pela moderação do professor
+      const { data: realReflections } = await supabase
+        .from('open_reflections')
+        .select('nickname, reflection_text')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (realReflections && realReflections.length > 0) {
+        setLiveReflections(
+          realReflections.map((r) => ({
+            nickname: r.nickname || 'Anônimo',
+            quote: r.reflection_text || '',
+          }))
+        );
+      }
+
+      if (!vError) {
+        const mappedTopAgents = (realVisitors || []).map((v) => ({
           nickname: v.nickname || `AGENTE #${v.agent_number || 100}`,
           total_score: v.total_score || 0,
           agent_number: v.agent_number || 100,
@@ -194,15 +212,9 @@ export default function LiveDashboardPage() {
 
         setStats((prev) => ({
           ...prev,
-          totalVisitors: visitorCount !== null && visitorCount > 0 ? visitorCount : prev.totalVisitors,
-          totalResponses: responseCount !== null && responseCount > 0 ? responseCount : prev.totalResponses,
+          totalVisitors: visitorCount !== null ? visitorCount : mappedTopAgents.length,
+          totalResponses: responseCount !== null ? responseCount : 0,
           topAgents: mappedTopAgents,
-        }));
-      } else if (visitorCount !== null && responseCount !== null) {
-        setStats((prev) => ({
-          ...prev,
-          totalVisitors: visitorCount > 0 ? visitorCount : prev.totalVisitors,
-          totalResponses: responseCount > 0 ? responseCount : prev.totalResponses,
         }));
       }
     } catch (err) {
@@ -310,7 +322,8 @@ export default function LiveDashboardPage() {
   };
 
   const progressPercent = ((SCREEN_ROTATION_SECONDS - countdown) / SCREEN_ROTATION_SECONDS) * 100;
-  const currentReflection = INITIAL_REFLECTIONS[reflectionIdx];
+  const currentReflection =
+    liveReflections[reflectionIdx % (liveReflections.length || 1)] || INITIAL_REFLECTIONS[0];
 
   return (
     <div className="fixed inset-0 bg-archive-950 text-archive-paper bg-military-grid flex flex-col justify-between p-4 sm:p-6 lg:p-8 select-none overflow-hidden z-50">
@@ -507,72 +520,82 @@ export default function LiveDashboardPage() {
                 </div>
 
                 <div className="space-y-2.5">
-                  {/* Destaque Líder #1 */}
-                  {stats.topAgents[0] && (
-                    <div className="p-4 bg-gradient-to-r from-turing-amber/20 via-archive-900 to-archive-950 border-2 border-turing-amber rounded-sm flex items-center justify-between gap-4 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-12 h-12 rounded-sm bg-turing-amber text-archive-950 flex items-center justify-center font-mono text-xl font-black shrink-0 shadow-md">
-                          <Crown className="w-7 h-7" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-lg font-black text-archive-paper truncate">
-                              {stats.topAgents[0].nickname}
-                            </span>
-                            <span className="px-2 py-0.5 bg-turing-amber text-archive-950 font-mono text-[10px] font-black rounded-xs uppercase shrink-0">
-                              1º LUGAR
-                            </span>
-                          </div>
-                          <div className="text-xs font-mono text-archive-muted mt-0.5">
-                            Convocado #{stats.topAgents[0].agent_number} • {stats.topAgents[0].completed_stations_count || 0} de 8 Estações Concluídas
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-2xl font-mono font-black text-turing-amber">
-                          {stats.topAgents[0].total_score} XP
-                        </div>
-                        <div className="text-[10px] font-mono text-turing-green font-semibold">
-                          {stats.topAgents[0].completed_stations_count || 0}/8 ESTAÇÕES
-                        </div>
-                      </div>
+                  {stats.topAgents.length === 0 ? (
+                    <div className="p-8 text-center border border-dashed border-archive-800 rounded-sm bg-archive-950/60 font-mono text-archive-muted space-y-2">
+                      <Users className="w-8 h-8 mx-auto text-archive-600 animate-pulse" />
+                      <p className="text-sm font-bold text-archive-paper">Aguardando primeiros agentes ingressarem...</p>
+                      <p className="text-xs text-archive-500">Escaneie o QR Code na entrada para iniciar a investigação!</p>
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {/* Destaque Líder #1 */}
+                      {stats.topAgents[0] && (
+                        <div className="p-4 bg-gradient-to-r from-turing-amber/20 via-archive-900 to-archive-950 border-2 border-turing-amber rounded-sm flex items-center justify-between gap-4 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-12 h-12 rounded-sm bg-turing-amber text-archive-950 flex items-center justify-center font-mono text-xl font-black shrink-0 shadow-md">
+                              <Crown className="w-7 h-7" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-lg font-black text-archive-paper truncate">
+                                  {stats.topAgents[0].nickname}
+                                </span>
+                                <span className="px-2 py-0.5 bg-turing-amber text-archive-950 font-mono text-[10px] font-black rounded-xs uppercase shrink-0">
+                                  1º LUGAR
+                                </span>
+                              </div>
+                              <div className="text-xs font-mono text-archive-muted mt-0.5">
+                                Convocado #{stats.topAgents[0].agent_number} • {stats.topAgents[0].completed_stations_count || 0} de 8 Estações Concluídas
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-2xl font-mono font-black text-turing-amber">
+                              {stats.topAgents[0].total_score} XP
+                            </div>
+                            <div className="text-[10px] font-mono text-turing-green font-semibold">
+                              {stats.topAgents[0].completed_stations_count || 0}/8 ESTAÇÕES
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
-                  {/* 2º ao 6º Lugares */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {stats.topAgents.slice(1, 6).map((agent, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 bg-archive-950 border border-archive-800 rounded-sm flex items-center justify-between gap-3 font-mono"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span
-                            className={`w-7 h-7 rounded-xs flex items-center justify-center font-bold text-xs shrink-0 ${
-                              idx === 0
-                                ? 'bg-archive-700 text-archive-paper border border-archive-600'
-                                : idx === 1
-                                ? 'bg-amber-900/50 text-turing-amber border border-amber-800'
-                                : 'bg-archive-900 text-archive-500'
-                            }`}
+                      {/* 2º ao 6º Lugares */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {stats.topAgents.slice(1, 6).map((agent, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3 bg-archive-950 border border-archive-800 rounded-sm flex items-center justify-between gap-3 font-mono"
                           >
-                            #{idx + 2}
-                          </span>
-                          <span className="font-semibold text-sm text-archive-paper truncate">
-                            {agent.nickname}
-                          </span>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="font-bold text-turing-amber text-sm">
-                            {agent.total_score} XP
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span
+                                className={`w-7 h-7 rounded-xs flex items-center justify-center font-bold text-xs shrink-0 ${
+                                  idx === 0
+                                    ? 'bg-archive-700 text-archive-paper border border-archive-600'
+                                    : idx === 1
+                                    ? 'bg-amber-900/50 text-turing-amber border border-amber-800'
+                                    : 'bg-archive-900 text-archive-500'
+                                }`}
+                              >
+                                #{idx + 2}
+                              </span>
+                              <span className="font-semibold text-sm text-archive-paper truncate">
+                                {agent.nickname}
+                              </span>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="font-bold text-turing-amber text-sm">
+                                {agent.total_score} XP
+                              </div>
+                              <div className="text-[10px] text-archive-500 font-normal">
+                                {agent.completed_stations_count || 0}/8 Estações
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-[10px] text-archive-500 font-normal">
-                            {agent.completed_stations_count || 0}/8 Estações
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  )}
                 </div>
               </div>
 
