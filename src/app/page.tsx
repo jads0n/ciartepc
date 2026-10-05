@@ -30,18 +30,24 @@ export default function WelcomePage() {
 
   return (
     <div className="flex flex-col items-center justify-center py-4 sm:py-8 max-w-xl mx-auto space-y-6">
-      {/* Cabeçalho Amigável */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-archive-850 border border-archive-700 rounded-full text-xs font-bold text-turing-amber">
-          <Sparkles className="w-3.5 h-3.5 text-turing-amber" />
+      {/* Cabeçalho Amigável com Convite para o Espaço Maker */}
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-archive-850 border border-turing-amber/50 rounded-full text-xs sm:text-sm font-bold text-turing-amber shadow-sm">
+          <Sparkles className="w-4 h-4 text-turing-amber" />
           <span>Feira de Ciências CIARTE 2026</span>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-black text-archive-paper">
-          Turing Lab
-        </h1>
-        <p className="text-sm text-archive-muted">
-          Bem-vindo à exposição interativa de Inteligência Artificial!
+        <div>
+          <h1 className="text-3xl sm:text-5xl font-black text-archive-paper tracking-tight">
+            Turing<span className="text-turing-amber">LAB</span>
+          </h1>
+          <p className="text-base sm:text-lg font-bold text-turing-amber mt-2">
+            📍 Visite-nos no <span className="underline decoration-turing-amber/60 underline-offset-4 text-archive-paper font-black">Espaço Maker</span> e investigue a IA!
+          </p>
+        </div>
+
+        <p className="text-xs sm:text-sm text-archive-muted max-w-md mx-auto leading-relaxed">
+          Participe dos experimentos práticos nas 8 bancadas da sala, responda pelo celular e acompanhe os votos ao vivo no telão!
         </p>
       </div>
 

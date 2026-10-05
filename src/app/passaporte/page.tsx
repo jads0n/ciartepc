@@ -114,17 +114,22 @@ export default function PassportPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Cabeçalho do Passaporte */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-archive-700">
         <div>
-          <div className="text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
-            ROTEIRO DA SUA VISITA
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
+              ROTEIRO DA SUA VISITA
+            </span>
+            <span className="text-archive-600">•</span>
+            <span className="text-xs font-bold text-turing-amber bg-archive-850 px-2.5 py-0.5 rounded-full border border-turing-amber/40">
+              📍 Espaço Maker
+            </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-archive-paper">
+          <h1 className="text-2xl sm:text-3xl font-black text-archive-paper mt-1">
             ESTAÇÕES DO LABORATÓRIO
           </h1>
           <p className="text-xs sm:text-sm text-archive-muted mt-1">
-            Escaneie o QR Code na mesa ou digite o código de 4 dígitos para responder:
+            Visite as bancadas no Espaço Maker, escaneie o QR Code na mesa ou digite o código de 4 dígitos:
           </p>
         </div>
 
