@@ -98,124 +98,151 @@ export default function KioskStationPage() {
     setHasVoted(true);
   };
 
+  // Toggle tela cheia para facilitar no notebook
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen().catch(() => {});
+      setIsFullscreen(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-archive-950 text-archive-paper bg-military-grid flex flex-col justify-between p-4 sm:p-8 select-none overflow-y-auto">
+    <div className="min-h-screen bg-archive-950 text-archive-paper bg-military-grid flex flex-col justify-between p-3 sm:p-5 md:p-6 select-none overflow-x-hidden">
       {/* 1. TOPO: IDENTIFICADOR DO TERMINAL */}
-      <div className="flex items-center justify-between border-b border-archive-800 pb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-turing-green animate-pulse" />
-          <span className="font-mono text-xs sm:text-sm font-bold text-turing-amber tracking-wider uppercase">
-            TERMINAL FÍSICO // BANCADA {String(station.order).padStart(2, '0')}
+      <div className="flex items-center justify-between border-b border-archive-800 pb-2.5 max-w-5xl w-full mx-auto">
+        <div className="flex items-center gap-2.5">
+          <div className="w-3 h-3 rounded-full bg-turing-green animate-pulse shadow-[0_0_8px_#10b981]" />
+          <span className="font-mono text-xs sm:text-sm md:text-base font-bold text-turing-amber tracking-wider uppercase">
+            TERMINAL // BANCADA {String(station.order).padStart(2, '0')}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] text-archive-muted hidden sm:inline">
-            MODO TOTEM LIVRE
-          </span>
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Botão de Tela Cheia */}
+          <button
+            onClick={toggleFullscreen}
+            className="text-[11px] sm:text-xs font-mono text-archive-muted hover:text-archive-paper border border-archive-700 hover:border-archive-500 px-2.5 py-1 rounded-xs transition-colors"
+            title="Alternar Tela Cheia"
+          >
+            {isFullscreen ? '⤢ Janela' : '⛶ Tela Cheia'}
+          </button>
 
           {/* Botão de reset manual se alguém largar o totem pela metade */}
           {!hasVoted && (
             <button
               onClick={handleSkipToExplanation}
-              className="text-[11px] font-mono text-archive-muted hover:text-turing-amber flex items-center gap-1 border border-archive-700 px-2.5 py-1 rounded-xs"
+              className="text-[11px] sm:text-xs font-mono text-archive-muted hover:text-turing-amber flex items-center gap-1 border border-archive-700 px-2.5 py-1 rounded-xs transition-colors"
             >
               <FastForward className="w-3 h-3" />
-              <span>Apenas Ver Explicação</span>
+              <span>Ver Explicação</span>
             </button>
           )}
         </div>
       </div>
 
       {/* 2. CENTRO: EXPERIÊNCIA DE VOTO OU RESULTADO */}
-      <div className="max-w-2xl w-full mx-auto my-auto py-6 space-y-6">
+      <div className="max-w-4xl lg:max-w-5xl w-full mx-auto my-auto py-3 sm:py-5">
         {!hasVoted ? (
           /* TELA A: PERGUNTA E BOTÕES DE TOQUE */
-          <div className="space-y-6">
-            <div className="space-y-2 text-center sm:text-left">
-              <div className="text-xs font-mono text-turing-amber uppercase tracking-wider">
-                {station.subtitle}
+          <div className="space-y-4 sm:space-y-5">
+            {/* Cabeçalho da Bancada */}
+            <div className="space-y-1 text-center sm:text-left border-l-4 border-turing-amber pl-3 sm:pl-4 py-0.5">
+              <div className="text-xs sm:text-sm font-mono text-turing-amber uppercase tracking-widest font-bold">
+                ESTAÇÃO {String(station.order).padStart(2, '0')} • {station.subtitle}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-mono font-bold text-archive-paper">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-mono font-black text-archive-paper">
                 {station.title}
               </h1>
-              <p className="text-xs sm:text-sm text-archive-muted font-sans leading-relaxed pt-1">
+              <p className="text-xs sm:text-sm md:text-base text-archive-muted font-sans leading-snug">
                 {station.context}
               </p>
             </div>
 
-            <div className="p-4 bg-archive-900 border border-archive-700 rounded-sm space-y-4">
-              <div className="text-xs sm:text-sm font-mono font-bold text-turing-amber flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 shrink-0" />
-                <span>{station.prompt}</span>
+            {/* CAIXA PRINCIPAL DA PERGUNTA EM DESTAQUE GIGANTE */}
+            <div className="p-4 sm:p-6 bg-archive-900 border-2 border-turing-amber/60 rounded-sm space-y-4 shadow-2xl">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
+                  <HelpCircle className="w-4 h-4 text-turing-amber shrink-0" />
+                  <span>PERGUNTA PARA VOTAR NA BANCADA:</span>
+                </div>
+                {/* TEXTO DA PERGUNTA BEM GRANDE PARA PAIS E VISITANTES */}
+                <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-[2rem] font-mono font-black text-archive-paper leading-tight tracking-tight">
+                  {station.prompt}
+                </h2>
               </div>
 
               {/* Botões grandes de votação com touch ágil */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1">
                 {station.options.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => handleVote(opt.value)}
-                    className="p-4 sm:p-5 rounded-sm border bg-archive-850 border-archive-700 text-archive-paper hover:bg-turing-amber/15 hover:border-turing-amber active:scale-[0.98] font-mono text-sm sm:text-base font-semibold text-left transition-all duration-150 flex items-center justify-between gap-3 shadow-md"
+                    className="p-4 sm:p-5 md:p-6 rounded-sm border-2 bg-archive-850 border-archive-700 hover:border-turing-amber hover:bg-turing-amber/15 active:scale-[0.98] text-archive-paper font-mono text-sm sm:text-base md:text-lg font-bold text-left transition-all duration-150 flex items-center justify-between gap-3 shadow-lg cursor-pointer group"
                   >
-                    <span>{opt.label}</span>
-                    <div className="w-3 h-3 rounded-full border border-archive-600 shrink-0" />
+                    <span className="leading-snug group-hover:text-amber-300 transition-colors">
+                      {opt.label}
+                    </span>
+                    <div className="w-4 h-4 rounded-full border-2 border-archive-600 group-hover:border-turing-amber group-hover:bg-turing-amber shrink-0 transition-colors" />
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="text-center text-[11px] font-mono text-archive-500">
-              * Toque em uma opção para votar instantaneamente. Nenhum dado pessoal é exigido.
+            <div className="text-center text-xs font-mono text-archive-muted">
+              👆 Toque ou clique em uma das opções acima para votar. Seu voto vai direto para o telão!
             </div>
           </div>
         ) : (
           /* TELA B: RESULTADO, INSIGHT E BARRA DE CONTROLE */
-          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+          <div className="space-y-4 sm:space-y-5 animate-in fade-in zoom-in-95 duration-200">
             <ClassifiedCard
               title="OPINIÃO REGISTRADA NO LAB"
               badge="CONFIRMADO"
               badgeVariant="complete"
-              className="space-y-4 bg-archive-900 border-turing-green/40 p-6"
+              className="space-y-4 bg-archive-900 border-2 border-turing-green/50 p-5 sm:p-7 shadow-2xl"
             >
-              <div className="flex items-center gap-2 text-turing-green font-mono text-sm font-bold uppercase">
-                <CheckCircle2 className="w-5 h-5" />
-                <span>Voto Contabilizado no Telão Coletivo!</span>
+              <div className="flex items-center gap-2.5 text-turing-green font-mono text-base sm:text-lg font-bold uppercase">
+                <CheckCircle2 className="w-6 h-6 text-turing-green shrink-0" />
+                <span>Voto Contabilizado no Telão Coletivo da Feira!</span>
               </div>
 
-              <div className="space-y-1">
-                <h2 className="text-lg sm:text-xl font-mono font-bold text-archive-paper">
+              <div className="space-y-2">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-mono font-black text-archive-paper">
                   {station.explanation.title}
                 </h2>
-                <p className="text-xs sm:text-sm text-archive-paper/90 leading-relaxed font-sans pt-1">
+                <p className="text-sm sm:text-base md:text-lg text-archive-paper/90 leading-relaxed font-sans">
                   {station.explanation.description}
                 </p>
               </div>
 
-              <div className="p-3 bg-archive-950 border border-archive-800 rounded-sm">
-                <div className="text-[10px] font-mono text-turing-amber uppercase tracking-wider font-bold">
-                  REFLEXÃO DA BANCADA
+              <div className="p-4 bg-archive-950 border border-turing-amber/40 rounded-sm">
+                <div className="text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
+                  REFLEXÃO DA BANCADA // TURING LAB
                 </div>
-                <p className="text-xs sm:text-sm font-mono text-archive-paper mt-1 italic">
+                <p className="text-sm sm:text-base md:text-lg font-mono text-turing-paper mt-1 italic font-semibold text-archive-paper">
                   "{station.explanation.insight}"
                 </p>
               </div>
             </ClassifiedCard>
 
             {/* Painel de Reset Automático e Aceleração */}
-            <div className="bg-archive-900 border border-archive-700 p-4 rounded-sm space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-archive-muted flex items-center gap-1.5">
-                  <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+            <div className="bg-archive-900 border border-archive-700 p-4 sm:p-5 rounded-sm space-y-3">
+              <div className="flex items-center justify-between text-xs sm:text-sm font-mono">
+                <span className="text-archive-muted flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4 animate-spin text-turing-amber" />
                   <span>Preparando para o próximo visitante em:</span>
                 </span>
-                <span className="text-turing-amber font-bold text-sm bg-archive-950 px-2 py-0.5 border border-archive-700 rounded-xs">
+                <span className="text-turing-amber font-mono font-bold text-base sm:text-lg bg-archive-950 px-3 py-1 border border-archive-700 rounded-xs">
                   {countdown}s
                 </span>
               </div>
 
               {/* Barra de Progresso do Countdown */}
-              <div className="w-full bg-archive-950 h-1.5 rounded-full overflow-hidden">
+              <div className="w-full bg-archive-950 h-2 rounded-full overflow-hidden">
                 <div
                   className="bg-turing-amber h-full transition-all duration-1000 rounded-full"
                   style={{ width: `${(countdown / AUTO_RESET_SECONDS) * 100}%` }}
@@ -226,12 +253,12 @@ export default function KioskStationPage() {
               <TerminalButton
                 type="button"
                 variant="primary"
-                size="md"
+                size="lg"
                 fullWidth
                 onClick={handleReset}
               >
-                <FastForward className="w-4 h-4" />
-                <span>PULAR ESPERA / PRÓXIMO VISITANTE</span>
+                <FastForward className="w-5 h-5" />
+                <span>PRÓXIMO VISITANTE (LIBERAR TELA AGORA)</span>
               </TerminalButton>
             </div>
           </div>
@@ -239,9 +266,9 @@ export default function KioskStationPage() {
       </div>
 
       {/* 3. RODAPÉ DO QUIOSQUE */}
-      <div className="border-t border-archive-800 pt-3 flex items-center justify-between text-[11px] font-mono text-archive-500">
-        <span>TURING LAB 2026 // FEIRA ESCOLAR</span>
-        <span>MODO BANCADA TOUCH</span>
+      <div className="border-t border-archive-800 pt-2 max-w-5xl w-full mx-auto flex items-center justify-between text-[11px] sm:text-xs font-mono text-archive-500">
+        <span>TURING LAB 2026 // CIARTE</span>
+        <span>MODO BANCADA TOUCH / NOTEBOOK</span>
       </div>
     </div>
   );
