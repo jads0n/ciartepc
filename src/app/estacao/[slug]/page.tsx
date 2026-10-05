@@ -20,6 +20,7 @@ import {
   QrCode,
   AlertTriangle,
   ShieldCheck,
+  HelpCircle,
 } from 'lucide-react';
 
 function StationContent() {
@@ -324,27 +325,33 @@ function StationContent() {
         className="space-y-4"
       >
         <div>
-          <h1 className="text-xl sm:text-2xl font-mono font-bold text-archive-paper">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-mono font-black text-archive-paper">
             {station.title}
           </h1>
-          <div className="text-xs font-mono text-turing-amber font-semibold mt-0.5">
+          <div className="text-xs sm:text-sm font-mono text-turing-amber font-bold mt-1 uppercase tracking-wider">
             {station.subtitle}
           </div>
         </div>
 
         {/* Contexto da Bancada Física */}
-        <div className="p-3 bg-archive-950/80 border-l-2 border-turing-amber rounded-r-sm text-xs sm:text-sm text-archive-paper/90 leading-relaxed font-sans">
+        <div className="p-3.5 sm:p-4 bg-archive-950/80 border-l-4 border-turing-amber rounded-r-sm text-sm sm:text-base text-archive-paper/95 leading-relaxed font-sans">
           {station.context}
         </div>
 
-        {/* Pergunta da Estação */}
+        {/* Pergunta da Estação em Destaque */}
         <div className="pt-2 space-y-3">
-          <label className="block text-xs sm:text-sm font-mono font-bold text-archive-paper">
-            DESAFIO: {station.prompt}
-          </label>
+          <div className="p-3.5 sm:p-4 bg-archive-950 border border-turing-amber/50 rounded-sm space-y-1.5 shadow-md">
+            <div className="text-[11px] sm:text-xs font-mono font-bold text-turing-amber uppercase tracking-wider flex items-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5 text-turing-amber shrink-0" />
+              <span>PERGUNTA DA BANCADA:</span>
+            </div>
+            <h2 className="text-base sm:text-lg md:text-xl font-mono font-bold text-archive-paper leading-snug">
+              {station.prompt}
+            </h2>
+          </div>
 
-          {/* Opções de Resposta */}
-          <div className="space-y-2 pt-1">
+          {/* Opções de Resposta Ampliadas */}
+          <div className="space-y-2.5 pt-1">
             {station.options.map((opt) => {
               const isSelected = selectedOption === opt.value;
               return (
@@ -353,21 +360,21 @@ function StationContent() {
                   key={opt.value}
                   disabled={hasAnswered}
                   onClick={() => setSelectedOption(opt.value)}
-                  className={`w-full text-left p-3.5 rounded-sm border font-mono text-xs sm:text-sm transition-all duration-150 flex items-center justify-between gap-3 ${
+                  className={`w-full text-left p-4 sm:p-4.5 rounded-sm border-2 font-mono text-sm sm:text-base leading-snug transition-all duration-150 flex items-center justify-between gap-3 ${
                     isSelected
-                      ? 'bg-turing-amber/20 border-turing-amber text-archive-paper font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                      ? 'bg-turing-amber/20 border-turing-amber text-archive-paper font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)]'
                       : 'bg-archive-900 border-archive-700 text-archive-paper/90 hover:border-archive-500 hover:bg-archive-800'
-                  } ${hasAnswered ? 'cursor-default' : 'cursor-pointer'}`}
+                  } ${hasAnswered ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]'}`}
                 >
-                  <span>{opt.label}</span>
+                  <span className="leading-snug">{opt.label}</span>
                   <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                       isSelected
                         ? 'border-turing-amber bg-turing-amber text-archive-950'
                         : 'border-archive-600'
                     }`}
                   >
-                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-archive-950" />}
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-archive-950" />}
                   </div>
                 </button>
               );
@@ -377,13 +384,13 @@ function StationContent() {
           {/* Pergunta extra opcional para Detetive Real x IA */}
           {slug === 'real-ou-ia' && !hasAnswered && (
             <div className="pt-2 space-y-1.5">
-              <label className="text-[11px] font-mono text-archive-muted block">
+              <label className="text-xs font-mono text-archive-muted block">
                 O que mais chamou sua atenção para decidir?
               </label>
               <select
                 value={influenceFactor}
                 onChange={(e) => setInfluenceFactor(e.target.value)}
-                className="w-full bg-archive-950 border border-archive-700 text-xs font-mono text-archive-paper p-2 rounded-xs outline-none focus:border-turing-amber"
+                className="w-full bg-archive-950 border border-archive-700 text-xs sm:text-sm font-mono text-archive-paper p-2.5 rounded-xs outline-none focus:border-turing-amber"
               >
                 <option value="">Selecione um fator (opcional)...</option>
                 <option value="maos">Mãos ou dedos</option>
@@ -408,40 +415,42 @@ function StationContent() {
               disabled={!selectedOption || isSubmitting}
               onClick={handleConfirmAnswer}
             >
-              <span>{isSubmitting ? 'REGISTRANDO...' : 'CONFIRMAR RESPOSTA'}</span>
-              <Award className="w-4 h-4" />
+              <span className="text-sm sm:text-base font-bold">
+                {isSubmitting ? 'REGISTRANDO...' : 'CONFIRMAR RESPOSTA'}
+              </span>
+              <Award className="w-5 h-5" />
             </TerminalButton>
           </div>
         )}
       </ClassifiedCard>
 
-      {/* Explicação Pedagógica Pós-Resposta */}
+      {/* Explicação Pedagógica Pós-Resposta Ampliada */}
       {hasAnswered && (
         <div className="space-y-4 animate-in fade-in duration-300">
           <ClassifiedCard
             title="INSIGHT INVESTIGATIVO // ANÁLISE"
             badge={`+${station.xp} XP`}
             badgeVariant="complete"
-            className="space-y-3 bg-archive-850/90 border-turing-green/40"
+            className="space-y-3.5 bg-archive-850/90 border-2 border-turing-green/40 p-5"
           >
-            <div className="flex items-center gap-2 text-turing-green font-mono text-xs font-bold uppercase">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-turing-green font-mono text-sm font-bold uppercase">
+              <CheckCircle2 className="w-5 h-5" />
               <span>Resposta Registrada com Sucesso</span>
             </div>
 
-            <h3 className="text-base font-mono font-bold text-archive-paper">
+            <h3 className="text-lg sm:text-xl font-mono font-bold text-archive-paper">
               {station.explanation.title}
             </h3>
 
-            <p className="text-xs sm:text-sm text-archive-paper/90 leading-relaxed font-sans">
+            <p className="text-sm sm:text-base text-archive-paper/95 leading-relaxed font-sans">
               {station.explanation.description}
             </p>
 
-            <div className="p-3 bg-archive-950 border border-archive-800 rounded-sm">
-              <div className="text-[10px] font-mono text-turing-amber uppercase tracking-wider font-bold">
+            <div className="p-3.5 sm:p-4 bg-archive-950 border border-turing-amber/40 rounded-sm">
+              <div className="text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
                 REFLEXÃO CENTRAL
               </div>
-              <p className="text-xs font-mono text-archive-paper mt-1 italic">
+              <p className="text-sm sm:text-base font-mono text-archive-paper mt-1 italic font-semibold">
                 "{station.explanation.insight}"
               </p>
             </div>
