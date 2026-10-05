@@ -111,165 +111,189 @@ export default function KioskStationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-archive-950 text-archive-paper bg-military-grid flex flex-col justify-between p-3 sm:p-5 md:p-6 select-none overflow-x-hidden">
-      {/* 1. TOPO: IDENTIFICADOR DO TERMINAL */}
-      <div className="flex items-center justify-between border-b border-archive-800 pb-2.5 max-w-5xl w-full mx-auto">
-        <div className="flex items-center gap-2.5">
-          <div className="w-3 h-3 rounded-full bg-turing-green animate-pulse shadow-[0_0_8px_#10b981]" />
-          <span className="font-mono text-xs sm:text-sm md:text-base font-bold text-turing-amber tracking-wider uppercase">
-            TERMINAL // BANCADA {String(station.order).padStart(2, '0')}
-          </span>
+    <div className="min-h-screen bg-archive-950 text-archive-paper flex flex-col justify-between p-4 sm:p-6 md:p-8 select-none overflow-x-hidden">
+      {/* 1. CABEÇALHO LIMPO E AMIGÁVEL */}
+      <header className="flex items-center justify-between border-b border-archive-800 pb-3 max-w-5xl w-full mx-auto">
+        <div className="flex items-center gap-3">
+          <span className="w-3.5 h-3.5 rounded-full bg-turing-green animate-pulse shadow-[0_0_10px_#10b981]" />
+          <div>
+            <span className="text-xs sm:text-sm font-mono font-bold text-turing-amber uppercase tracking-wider block">
+              ESTAÇÃO {String(station.order).padStart(2, '0')} DE 08
+            </span>
+            <h1 className="text-base sm:text-xl font-bold text-archive-paper leading-tight">
+              {station.title}
+            </h1>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2">
           {/* Botão de Tela Cheia */}
           <button
             onClick={toggleFullscreen}
-            className="text-[11px] sm:text-xs font-mono text-archive-muted hover:text-archive-paper border border-archive-700 hover:border-archive-500 px-2.5 py-1 rounded-xs transition-colors"
+            className="text-xs font-mono text-archive-muted hover:text-archive-paper border border-archive-700 hover:border-archive-500 px-3 py-1.5 rounded-sm transition-colors cursor-pointer"
             title="Alternar Tela Cheia"
           >
-            {isFullscreen ? '⤢ Janela' : '⛶ Tela Cheia'}
+            {isFullscreen ? '⤢ Sair da Tela Cheia' : '⛶ Tela Cheia'}
           </button>
-
-          {/* Botão de reset manual se alguém largar o totem pela metade */}
-          {!hasVoted && (
-            <button
-              onClick={handleSkipToExplanation}
-              className="text-[11px] sm:text-xs font-mono text-archive-muted hover:text-turing-amber flex items-center gap-1 border border-archive-700 px-2.5 py-1 rounded-xs transition-colors"
-            >
-              <FastForward className="w-3 h-3" />
-              <span>Ver Explicação</span>
-            </button>
-          )}
         </div>
-      </div>
+      </header>
 
-      {/* 2. CENTRO: EXPERIÊNCIA DE VOTO OU RESULTADO */}
-      <div className="max-w-4xl lg:max-w-5xl w-full mx-auto my-auto py-3 sm:py-5">
+      {/* 2. CENTRO: PERGUNTA OBJETIVA E OPÇÕES GRANDES */}
+      <main className="max-w-4xl lg:max-w-5xl w-full mx-auto my-auto py-4 sm:py-6">
         {!hasVoted ? (
-          /* TELA A: PERGUNTA E BOTÕES DE TOQUE */
-          <div className="space-y-4 sm:space-y-5">
-            {/* Cabeçalho da Bancada */}
-            <div className="space-y-1 text-center sm:text-left border-l-4 border-turing-amber pl-3 sm:pl-4 py-0.5">
-              <div className="text-xs sm:text-sm font-mono text-turing-amber uppercase tracking-widest font-bold">
-                ESTAÇÃO {String(station.order).padStart(2, '0')} • {station.subtitle}
+          /* TELA DE VOTAÇÃO: 2 PASSOS CLAROS E DIRETOS */
+          <div className="space-y-6">
+            {/* Bloco da Pergunta Principal */}
+            <div className="bg-archive-900 border-2 border-turing-amber/70 rounded-md p-5 sm:p-7 shadow-xl space-y-4">
+              {/* Passo 1 - Instrução Direta */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-turing-amber/15 border border-turing-amber/40 rounded-full text-xs sm:text-sm font-bold text-turing-amber">
+                <span>Passo 1</span>
+                <span className="text-archive-paper font-normal">•</span>
+                <span>Leia a pergunta da bancada</span>
               </div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-mono font-black text-archive-paper">
-                {station.title}
-              </h1>
-              <p className="text-xs sm:text-sm md:text-base text-archive-muted font-sans leading-snug">
-                {station.context}
-              </p>
+
+              {/* Texto da Pergunta Gigante e Acessível */}
+              <h2 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-archive-paper leading-snug tracking-normal">
+                {station.prompt}
+              </h2>
+
+              {/* Explicação contextual em português simples */}
+              {station.context && (
+                <p className="text-sm sm:text-base text-archive-muted leading-relaxed pt-1 border-t border-archive-800">
+                  💡 <strong>Entenda o cenário:</strong> {station.context}
+                </p>
+              )}
             </div>
 
-            {/* CAIXA PRINCIPAL DA PERGUNTA EM DESTAQUE GIGANTE */}
-            <div className="p-4 sm:p-6 bg-archive-900 border-2 border-turing-amber/60 rounded-sm space-y-4 shadow-2xl">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
-                  <HelpCircle className="w-4 h-4 text-turing-amber shrink-0" />
-                  <span>PERGUNTA PARA VOTAR NA BANCADA:</span>
-                </div>
-                {/* TEXTO DA PERGUNTA BEM GRANDE PARA PAIS E VISITANTES */}
-                <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-[2rem] font-mono font-black text-archive-paper leading-tight tracking-tight">
-                  {station.prompt}
-                </h2>
+            {/* Bloco das Opções de Resposta */}
+            <div className="space-y-3">
+              {/* Passo 2 - Instrução Direta */}
+              <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-archive-paper px-1">
+                <span className="text-turing-amber flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-turing-amber text-archive-950 flex items-center justify-center font-black text-xs">
+                    2
+                  </span>
+                  <span>Toque ou clique na sua resposta:</span>
+                </span>
+                <span className="text-archive-muted text-xs font-normal hidden sm:inline">
+                  (Basta um toque na tela)
+                </span>
               </div>
 
-              {/* Botões grandes de votação com touch ágil */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1">
-                {station.options.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleVote(opt.value)}
-                    className="p-4 sm:p-5 md:p-6 rounded-sm border-2 bg-archive-850 border-archive-700 hover:border-turing-amber hover:bg-turing-amber/15 active:scale-[0.98] text-archive-paper font-mono text-sm sm:text-base md:text-lg font-bold text-left transition-all duration-150 flex items-center justify-between gap-3 shadow-lg cursor-pointer group"
-                  >
-                    <span className="leading-snug group-hover:text-amber-300 transition-colors">
-                      {opt.label}
-                    </span>
-                    <div className="w-4 h-4 rounded-full border-2 border-archive-600 group-hover:border-turing-amber group-hover:bg-turing-amber shrink-0 transition-colors" />
-                  </button>
-                ))}
-              </div>
-            </div>
+              {/* Botões Grandes e Espaçados */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {station.options.map((opt, idx) => {
+                  const letters = ['A', 'B', 'C', 'D', 'E'];
+                  const letterBadge = letters[idx] || String(idx + 1);
 
-            <div className="text-center text-xs font-mono text-archive-muted">
-              👆 Toque ou clique em uma das opções acima para votar. Seu voto vai direto para o telão!
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleVote(opt.value)}
+                      className="p-4 sm:p-5 md:p-6 rounded-md border-2 bg-archive-850 border-archive-700 hover:border-turing-amber hover:bg-turing-amber/10 active:scale-[0.98] text-archive-paper text-left transition-all duration-150 flex items-center gap-4 shadow-lg cursor-pointer group"
+                    >
+                      {/* Letra da opção em destaque */}
+                      <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-sm bg-archive-950 border border-archive-600 group-hover:border-turing-amber group-hover:bg-turing-amber group-hover:text-archive-950 text-turing-amber font-mono text-base sm:text-lg font-black flex items-center justify-center shrink-0 transition-colors">
+                        {letterBadge}
+                      </span>
+
+                      {/* Texto da Opção com Letra Grande */}
+                      <span className="text-base sm:text-lg md:text-xl font-bold leading-snug group-hover:text-turing-amber transition-colors flex-1">
+                        {opt.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         ) : (
-          /* TELA B: RESULTADO, INSIGHT E BARRA DE CONTROLE */
-          <div className="space-y-4 sm:space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <ClassifiedCard
-              title="OPINIÃO REGISTRADA NO LAB"
-              badge="CONFIRMADO"
-              badgeVariant="complete"
-              className="space-y-4 bg-archive-900 border-2 border-turing-green/50 p-5 sm:p-7 shadow-2xl"
-            >
-              <div className="flex items-center gap-2.5 text-turing-green font-mono text-base sm:text-lg font-bold uppercase">
-                <CheckCircle2 className="w-6 h-6 text-turing-green shrink-0" />
-                <span>Voto Contabilizado no Telão Coletivo da Feira!</span>
+          /* TELA DE AGRADECIMENTO E INSIGHT PÓS-VOTO */
+          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            {/* Cartão de Sucesso Gigante */}
+            <div className="bg-archive-900 border-2 border-turing-green/60 rounded-md p-6 sm:p-8 shadow-2xl space-y-5 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-archive-800 pb-4">
+                <div className="flex items-center gap-3 justify-center sm:justify-start">
+                  <div className="w-12 h-12 rounded-full bg-turing-green/20 border-2 border-turing-green flex items-center justify-center text-turing-green shrink-0">
+                    <CheckCircle2 className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-black text-turing-green">
+                      Resposta Registrada!
+                    </h3>
+                    <p className="text-xs sm:text-sm text-archive-muted">
+                      Seu voto já foi computado no telão geral da feira.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-xs font-mono text-archive-muted bg-archive-950 px-3 py-1.5 rounded-sm border border-archive-800 self-center">
+                  Obrigado por participar!
+                </div>
               </div>
 
+              {/* Explicação Didática Simples */}
               <div className="space-y-2">
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-mono font-black text-archive-paper">
+                <div className="text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
+                  O que aprendemos nesta bancada:
+                </div>
+                <h4 className="text-lg sm:text-2xl font-bold text-archive-paper leading-snug">
                   {station.explanation.title}
-                </h2>
+                </h4>
                 <p className="text-sm sm:text-base md:text-lg text-archive-paper/90 leading-relaxed font-sans">
                   {station.explanation.description}
                 </p>
               </div>
 
-              <div className="p-4 bg-archive-950 border border-turing-amber/40 rounded-sm">
-                <div className="text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
-                  REFLEXÃO DA BANCADA // TURING LAB
+              {/* Frase de Reflexão Central */}
+              {station.explanation.insight && (
+                <div className="p-4 bg-archive-950 border-l-4 border-turing-amber rounded-r-md">
+                  <p className="text-base sm:text-lg font-medium text-turing-paper italic text-archive-paper">
+                    "{station.explanation.insight}"
+                  </p>
                 </div>
-                <p className="text-sm sm:text-base md:text-lg font-mono text-turing-paper mt-1 italic font-semibold text-archive-paper">
-                  "{station.explanation.insight}"
-                </p>
-              </div>
-            </ClassifiedCard>
+              )}
+            </div>
 
-            {/* Painel de Reset Automático e Aceleração */}
-            <div className="bg-archive-900 border border-archive-700 p-4 sm:p-5 rounded-sm space-y-3">
-              <div className="flex items-center justify-between text-xs sm:text-sm font-mono">
+            {/* Barra de Próximo Visitante em Destaque */}
+            <div className="bg-archive-900 border border-archive-700 p-4 sm:p-5 rounded-md space-y-3">
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-archive-muted flex items-center gap-2">
                   <RotateCcw className="w-4 h-4 animate-spin text-turing-amber" />
-                  <span>Preparando para o próximo visitante em:</span>
+                  <span>Próximo visitante em <strong>{countdown} segundos</strong>...</span>
                 </span>
-                <span className="text-turing-amber font-mono font-bold text-base sm:text-lg bg-archive-950 px-3 py-1 border border-archive-700 rounded-xs">
+                <span className="text-turing-amber font-mono font-black text-lg bg-archive-950 px-3 py-0.5 border border-archive-700 rounded-sm">
                   {countdown}s
                 </span>
               </div>
 
-              {/* Barra de Progresso do Countdown */}
-              <div className="w-full bg-archive-950 h-2 rounded-full overflow-hidden">
+              {/* Barra de Progresso do Tempo */}
+              <div className="w-full bg-archive-950 h-2.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-turing-amber h-full transition-all duration-1000 rounded-full"
+                  className="bg-turing-green h-full transition-all duration-1000 rounded-full"
                   style={{ width: `${(countdown / AUTO_RESET_SECONDS) * 100}%` }}
                 />
               </div>
 
-              {/* Botão de Pular a Espera (Acelera a fila) */}
-              <TerminalButton
+              {/* Botão Gigante de Liberação Imediata */}
+              <button
                 type="button"
-                variant="primary"
-                size="lg"
-                fullWidth
                 onClick={handleReset}
+                className="w-full py-4 px-6 bg-turing-amber hover:bg-amber-400 active:scale-[0.99] text-archive-950 font-extrabold text-base sm:text-lg rounded-sm transition-all duration-150 flex items-center justify-center gap-3 cursor-pointer shadow-lg uppercase tracking-wider"
               >
                 <FastForward className="w-5 h-5" />
-                <span>PRÓXIMO VISITANTE (LIBERAR TELA AGORA)</span>
-              </TerminalButton>
+                <span>Próximo Visitante (Liberar Agora)</span>
+              </button>
             </div>
           </div>
         )}
-      </div>
+      </main>
 
-      {/* 3. RODAPÉ DO QUIOSQUE */}
-      <div className="border-t border-archive-800 pt-2 max-w-5xl w-full mx-auto flex items-center justify-between text-[11px] sm:text-xs font-mono text-archive-500">
-        <span>TURING LAB 2026 // CIARTE</span>
-        <span>MODO BANCADA TOUCH / NOTEBOOK</span>
-      </div>
+      {/* 3. RODAPÉ DISCRETO */}
+      <footer className="border-t border-archive-800 pt-3 max-w-5xl w-full mx-auto flex items-center justify-between text-xs text-archive-muted">
+        <span>CIARTE 2026 • Turing Lab</span>
+        <span>Bancada Interativa</span>
+      </footer>
     </div>
   );
 }

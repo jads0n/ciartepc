@@ -117,23 +117,23 @@ export default function PassportPage() {
       {/* Cabeçalho do Passaporte */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-archive-700">
         <div>
-          <div className="text-xs font-mono text-turing-amber uppercase tracking-wider">
-            PASSAPORTE DE INVESTIGAÇÃO DIGITAL
+          <div className="text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
+            ROTEIRO DA SUA VISITA
           </div>
-          <h1 className="text-2xl sm:text-3xl font-mono font-bold text-archive-paper">
+          <h1 className="text-2xl sm:text-3xl font-black text-archive-paper">
             ESTAÇÕES DO LABORATÓRIO
           </h1>
-          <p className="text-xs text-archive-muted mt-1">
-            Escaneie o QR Code da bancada, digite o código de 4 dígitos ou selecione abaixo:
+          <p className="text-xs sm:text-sm text-archive-muted mt-1">
+            Escaneie o QR Code na mesa ou digite o código de 4 dígitos para responder:
           </p>
         </div>
 
         {/* Card de Progresso */}
         <div className="bg-archive-850 border border-archive-700 p-3 rounded-sm flex items-center gap-4 shrink-0">
           <div className="text-right">
-            <div className="text-[10px] font-mono text-archive-muted uppercase">Progresso Geral</div>
+            <div className="text-[10px] font-mono text-archive-muted uppercase font-bold">Seu Progresso</div>
             <div className="text-lg font-mono font-bold text-turing-green">
-              {completedCount} <span className="text-xs text-archive-muted">/ 8 Concluídas</span>
+              {completedCount} <span className="text-xs text-archive-muted">/ 8 Estações</span>
             </div>
           </div>
           <div className="w-12 h-12 rounded-full border-2 border-archive-700 flex items-center justify-center font-mono text-xs font-bold text-turing-amber bg-archive-950">
@@ -157,8 +157,8 @@ export default function PassportPage() {
             #{agent?.agent_number || 100}
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] font-mono text-archive-muted uppercase tracking-wider">
-              NOME DO AGENTE / INVESTIGADOR
+            <div className="text-[10px] font-mono text-archive-muted uppercase tracking-wider font-bold">
+              SEU NOME / APELIDO NA FEIRA
             </div>
             {isEditingNick ? (
               <form onSubmit={handleSaveNickname} className="flex flex-wrap items-center gap-2 mt-1">
@@ -201,7 +201,7 @@ export default function PassportPage() {
                   title="Alterar seu nome"
                 >
                   <Edit3 className="w-3 h-3" />
-                  <span>Alterar Nome</span>
+                  <span>Trocar Nome</span>
                 </button>
               </div>
             )}
@@ -210,12 +210,12 @@ export default function PassportPage() {
 
         <div className="flex items-center gap-4 text-xs font-mono shrink-0 border-t sm:border-t-0 border-archive-800 pt-2 sm:pt-0">
           <div>
-            <span className="text-archive-muted text-[10px] uppercase block">Pontuação</span>
+            <span className="text-archive-muted text-[10px] uppercase block font-bold">Seus Pontos</span>
             <span className="text-turing-amber font-bold text-sm">+{agent?.total_score || 0} XP</span>
           </div>
           <div className="border-l border-archive-800 pl-4">
-            <span className="text-archive-muted text-[10px] uppercase block">Estações</span>
-            <span className="text-turing-green font-bold text-sm">{completedCount} / 8</span>
+            <span className="text-archive-muted text-[10px] uppercase block font-bold">Concluídas</span>
+            <span className="text-turing-green font-bold text-sm">{completedCount} de 8</span>
           </div>
         </div>
       </div>
@@ -228,14 +228,14 @@ export default function PassportPage() {
       )}
 
       {/* Caixa Interativa de Desbloqueio: Botão Direto de Escanear QR Code + Digitar Código */}
-      <div className="bg-archive-900 border-2 border-turing-amber/50 p-4 rounded-sm space-y-4 shadow-lg">
+      <div className="bg-archive-900 border-2 border-turing-amber/50 p-4 rounded-md space-y-4 shadow-lg">
         {/* BOTÃO PRINCIPAL DIRETO: ESCANEAR QR CODE */}
         <Link
           href="/escanear"
-          className="w-full py-3.5 px-4 bg-gradient-to-r from-turing-amber via-amber-400 to-turing-amber text-archive-950 font-mono text-sm sm:text-base font-black rounded-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all shadow-[0_0_20px_rgba(245,158,11,0.25)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] active:scale-98 cursor-pointer"
+          className="w-full py-4 px-4 bg-gradient-to-r from-turing-amber via-amber-400 to-turing-amber text-archive-950 font-mono text-sm sm:text-base font-black rounded-sm uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all shadow-[0_0_20px_rgba(245,158,11,0.25)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] active:scale-98 cursor-pointer"
         >
           <QrCode className="w-5 h-5 shrink-0" />
-          <span>📷 ESCANEAR QR CODE DA BANCADA</span>
+          <span>📷 ESCANEAR QR CODE NA MESA</span>
         </Link>
 
         {/* Divisor "OU DIGITE O CÓDIGO" */}
@@ -253,8 +253,8 @@ export default function PassportPage() {
               maxLength={6}
               value={inputCode}
               onChange={(e) => handleInputChange(e.target.value)}
-              placeholder="Digite o código da mesa: ex: 12AB, 23BC..."
-              className="w-full bg-archive-950 border border-archive-700 focus:border-turing-amber text-archive-paper font-mono text-base tracking-widest uppercase px-3 py-2.5 rounded-xs outline-none transition-colors"
+              placeholder="Digite os 4 dígitos: ex: 12AB..."
+              className="w-full bg-archive-950 border border-archive-700 focus:border-turing-amber text-archive-paper font-mono text-base tracking-widest uppercase px-3 py-2.5 rounded-sm outline-none transition-colors"
             />
             {inputCode && (
               <button
@@ -272,7 +272,7 @@ export default function PassportPage() {
 
           <button
             type="submit"
-            className="px-5 py-2.5 bg-archive-800 hover:bg-archive-750 text-turing-amber font-mono text-xs font-bold rounded-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer border border-archive-700 hover:border-turing-amber"
+            className="px-5 py-2.5 bg-archive-800 hover:bg-archive-750 text-turing-amber font-mono text-xs font-bold rounded-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer border border-archive-700 hover:border-turing-amber"
           >
             <Zap className="w-4 h-4" />
             <span>ABRIR ESTAÇÃO</span>
@@ -309,15 +309,15 @@ export default function PassportPage() {
               }`}
             >
               <ClassifiedCard
-                title={`ESTAÇÃO ${String(station.order).padStart(2, '0')}`}
+                title={`BANCADA ${String(station.order).padStart(2, '0')}`}
                 badge={
                   isCompleted
-                    ? 'CONCLUÍDA'
+                    ? '✓ CONCLUÍDA'
                     : isPrerequisiteLocked
                     ? 'BLOQUEADA'
                     : isUnlocked
-                    ? 'DESBLOQUEADA'
-                    : 'REQUER CÓDIGO'
+                    ? 'LIBERADA'
+                    : 'IR À BANCADA'
                 }
                 badgeVariant={
                   isCompleted
@@ -354,11 +354,11 @@ export default function PassportPage() {
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <h2 className="font-mono text-sm sm:text-base font-bold text-archive-paper leading-snug">
+                        <h2 className="font-sans text-base sm:text-lg font-bold text-archive-paper leading-snug">
                           {station.title}
                         </h2>
                       </div>
-                      <div className="text-xs font-mono text-turing-amber/90 font-medium">
+                      <div className="text-xs text-archive-muted font-sans mt-0.5">
                         {station.subtitle}
                       </div>
                     </div>
@@ -367,29 +367,29 @@ export default function PassportPage() {
                   {/* Status da Bancada Física (Sem expor o código) */}
                   <div className="pt-1">
                     {isCompleted ? (
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-turing-green">
-                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                        <span>Investigação concluída (+{station.xp} XP)</span>
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-turing-green">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>✓ Concluída (+{station.xp} pontos)</span>
                       </div>
                     ) : isUnlocked ? (
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-turing-amber">
-                        <Zap className="w-3.5 h-3.5 shrink-0" />
-                        <span>Bancada liberada // Pronta para responder</span>
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-turing-amber">
+                        <Zap className="w-4 h-4 shrink-0" />
+                        <span>Pronta para responder • Toque aqui</span>
                       </div>
                     ) : isPrerequisiteLocked ? (
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-archive-500">
-                        <Lock className="w-3.5 h-3.5 shrink-0" />
-                        <span>Requer {3 - completedCount} estações concluídas antes</span>
+                      <div className="flex items-center gap-1.5 text-xs text-archive-500">
+                        <Lock className="w-4 h-4 shrink-0" />
+                        <span>Complete pelo menos 3 estações antes</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-archive-400">
-                        <Lock className="w-3.5 h-3.5 text-turing-amber/70 shrink-0" />
-                        <span>Vá até a bancada para ler o QR Code ou digitar código</span>
+                      <div className="flex items-center gap-1.5 text-xs text-archive-muted">
+                        <QrCode className="w-4 h-4 shrink-0 text-turing-amber" />
+                        <span>Escaneie a placa na mesa para responder</span>
                       </div>
                     )}
                   </div>
 
-                  <p className="text-xs text-archive-muted line-clamp-2 pt-0.5">
+                  <p className="text-xs text-archive-muted line-clamp-2 pt-0.5 font-sans">
                     {station.context}
                   </p>
                 </div>

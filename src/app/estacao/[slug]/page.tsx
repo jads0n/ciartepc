@@ -172,86 +172,88 @@ function StationContent() {
             href="/passaporte"
             className="text-archive-muted hover:text-archive-paper flex items-center gap-1.5 transition-colors"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>[ VOLTAR AO PASSAPORTE ]</span>
+            <ArrowLeft className="w-4 h-4" />
+            <span>← Voltar ao Passaporte</span>
           </Link>
-          <span className="text-turing-amber font-mono text-xs">
+          <span className="text-turing-amber font-mono text-xs font-bold">
             ESTAÇÃO {String(station.order).padStart(2, '0')} DE 08
           </span>
         </div>
 
-        <ClassifiedCard
-          title="ACESSO RESTRITO // BANCADA BLOQUEADA"
-          badge="REQUER BANCADA"
-          badgeVariant="amber"
-          className="space-y-5 text-center py-4"
-        >
+        <div className="bg-archive-900 border-2 border-turing-amber/60 rounded-md p-6 sm:p-8 space-y-6 text-center shadow-xl">
           <div className="w-16 h-16 rounded-full bg-archive-950 border-2 border-turing-amber/60 mx-auto flex items-center justify-center text-turing-amber shadow-[0_0_15px_rgba(245,158,11,0.2)]">
             <Lock className="w-8 h-8" />
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-2xl font-mono font-black text-archive-paper">
+            <span className="text-xs font-mono font-bold text-turing-amber uppercase tracking-wider">
+              Bancada {String(station.order).padStart(2, '0')}
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black text-archive-paper">
               {station.title}
             </h1>
-            <p className="text-xs font-mono text-turing-amber">
+            <p className="text-sm text-archive-muted">
               {station.subtitle}
             </p>
           </div>
 
-          <div className="p-3 bg-archive-950/80 border-l-2 border-turing-amber rounded-r-sm text-xs text-archive-paper/90 leading-relaxed font-sans text-left">
-            Esta estação requer que você esteja presencialmente na bancada de experimentos.
-            Para liberar os desafios e responder, escaneie a placa QR Code na mesa ou digite abaixo o código de 4 dígitos:
-          </div>
+          <p className="text-sm sm:text-base text-archive-paper/90 leading-relaxed font-sans bg-archive-950 p-4 rounded-sm border border-archive-800">
+            📍 <strong>Como liberar esta pergunta:</strong> Você precisa estar na mesa desta bancada. Escolha uma das duas formas abaixo:
+          </p>
 
-          <form onSubmit={handleGateUnlock} className="space-y-4 max-w-sm mx-auto pt-2">
-            <div className="space-y-1 text-left">
-              <label className="text-[11px] font-mono text-archive-muted block">
-                CÓDIGO DE 4 DÍGITOS DA BANCADA:
+          <form onSubmit={handleGateUnlock} className="space-y-4 max-w-sm mx-auto">
+            {/* Opção 1: Código de 4 dígitos */}
+            <div className="space-y-1.5 text-left">
+              <label className="text-xs font-bold text-turing-amber block">
+                OPÇÃO 1: Digite o código de 4 letras/números da placa:
               </label>
               <input
                 type="text"
                 maxLength={4}
                 value={gateInput}
                 onChange={(e) => handleGateInputChange(e.target.value)}
-                placeholder="____"
+                placeholder="Ex: 12AB"
                 autoFocus
-                className="w-full text-center tracking-[0.35em] text-2xl font-mono font-bold bg-archive-950 border-2 border-turing-amber/70 focus:border-turing-amber text-turing-amber rounded-sm py-3 px-4 uppercase outline-none shadow-inner transition-colors"
+                className="w-full text-center tracking-[0.3em] text-2xl font-mono font-black bg-archive-950 border-2 border-turing-amber/70 focus:border-turing-amber text-turing-amber rounded-sm py-3 px-4 uppercase outline-none shadow-inner transition-colors"
               />
             </div>
 
             {gateError && (
-              <div className="p-2.5 bg-turing-red/15 border border-turing-red/40 text-turing-red font-mono text-xs rounded-xs flex items-center gap-2 text-left">
+              <div className="p-3 bg-turing-red/15 border border-turing-red/40 text-turing-red font-mono text-xs rounded-sm flex items-center gap-2 text-left">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{gateError}</span>
               </div>
             )}
 
-            <TerminalButton
+            <button
               type="submit"
-              variant="primary"
-              size="lg"
-              fullWidth
               disabled={gateInput.trim().length === 0}
+              className="w-full py-3.5 px-5 bg-turing-amber hover:bg-amber-400 disabled:opacity-50 text-archive-950 font-bold text-sm sm:text-base rounded-sm transition-all flex items-center justify-center gap-2 cursor-pointer uppercase shadow-md"
             >
               <Zap className="w-4 h-4" />
-              <span>DESBLOQUEAR BANCADA</span>
-            </TerminalButton>
+              <span>Liberar Estação Agora</span>
+            </button>
 
-            <div className="pt-2 border-t border-archive-800 space-y-2">
-              <Link
-                href="/escanear"
-                className="w-full py-2.5 px-4 bg-archive-850 hover:bg-archive-800 border border-turing-amber/40 text-turing-amber hover:text-amber-300 font-mono text-xs font-bold rounded-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <QrCode className="w-4 h-4 text-turing-amber" />
-                <span>📷 ABRIR CÂMERA PARA ESCANEAR QR CODE</span>
-              </Link>
-              <p className="text-[10px] font-mono text-archive-muted">
-                Aponte a câmera para a placa da bancada para liberar na hora.
-              </p>
+            {/* Separador "OU" */}
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-archive-800" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-archive-900 px-3 text-archive-muted font-bold">OU</span>
+              </div>
             </div>
+
+            {/* Opção 2: Câmera QR Code */}
+            <Link
+              href="/escanear"
+              className="w-full py-3.5 px-4 bg-archive-850 hover:bg-archive-800 border-2 border-turing-cyan/50 text-turing-cyan hover:text-cyan-300 font-bold text-sm sm:text-base rounded-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+            >
+              <QrCode className="w-5 h-5 text-turing-cyan" />
+              <span>📷 Escanear QR Code com Câmera</span>
+            </Link>
           </form>
-        </ClassifiedCard>
+        </div>
       </div>
     );
   }
@@ -303,181 +305,187 @@ function StationContent() {
           href="/passaporte"
           className="text-archive-muted hover:text-archive-paper flex items-center gap-1.5 transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>[ PASSAPORTE ]</span>
+          <ArrowLeft className="w-4 h-4" />
+          <span>← Voltar ao Passaporte</span>
         </Link>
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-turing-green/15 border border-turing-green/40 text-turing-green text-[10px] font-mono font-bold rounded-xs tracking-wider flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" />
-            BANCADA LIBERADA
-          </span>
-          <span className="text-turing-amber font-semibold">
-            ESTAÇÃO {String(station.order).padStart(2, '0')} DE 08
-          </span>
-        </div>
+        <span className="text-turing-amber font-mono text-xs font-bold">
+          ESTAÇÃO {String(station.order).padStart(2, '0')} DE 08
+        </span>
       </div>
 
-      {/* Cartão de Dossiê da Estação */}
-      <ClassifiedCard
-        title={`ARQUIVO CONFIDENCIAL // ESTAÇÃO ${station.order}`}
-        badge={hasAnswered ? 'INVESTIGADA' : 'EM ANDAMENTO'}
-        badgeVariant={hasAnswered ? 'complete' : 'amber'}
-        className="space-y-4"
-      >
-        <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-mono font-black text-archive-paper">
+      {/* Cartão Principal da Estação */}
+      <div className="bg-archive-900 border-2 border-archive-700 rounded-md p-5 sm:p-7 space-y-5 shadow-xl">
+        {/* Cabeçalho da Bancada */}
+        <div className="border-b border-archive-800 pb-3">
+          <span className="text-xs font-mono font-bold text-turing-amber uppercase tracking-wider block">
+            Bancada {String(station.order).padStart(2, '0')}
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black text-archive-paper mt-0.5">
             {station.title}
           </h1>
-          <div className="text-xs sm:text-sm font-mono text-turing-amber font-bold mt-1 uppercase tracking-wider">
+          <p className="text-sm text-archive-muted mt-1 font-sans">
             {station.subtitle}
-          </div>
+          </p>
         </div>
 
-        {/* Contexto da Bancada Física */}
-        <div className="p-3.5 sm:p-4 bg-archive-950/80 border-l-4 border-turing-amber rounded-r-sm text-sm sm:text-base text-archive-paper/95 leading-relaxed font-sans">
-          {station.context}
-        </div>
-
-        {/* Pergunta da Estação em Destaque */}
-        <div className="pt-2 space-y-3">
-          <div className="p-3.5 sm:p-4 bg-archive-950 border border-turing-amber/50 rounded-sm space-y-1.5 shadow-md">
-            <div className="text-[11px] sm:text-xs font-mono font-bold text-turing-amber uppercase tracking-wider flex items-center gap-1.5">
-              <HelpCircle className="w-3.5 h-3.5 text-turing-amber shrink-0" />
-              <span>PERGUNTA DA BANCADA:</span>
+        {/* Pergunta da Estação em Destaque Absoluto */}
+        <div className="space-y-4">
+          <div className="bg-archive-950 border-2 border-turing-amber/60 rounded-md p-4 sm:p-5 space-y-2.5 shadow-md">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-turing-amber/15 border border-turing-amber/40 rounded-full text-xs font-bold text-turing-amber">
+              <span>Passo 1</span>
+              <span>•</span>
+              <span>Leia a pergunta</span>
             </div>
-            <h2 className="text-base sm:text-lg md:text-xl font-mono font-bold text-archive-paper leading-snug">
+            <h2 className="text-lg sm:text-2xl font-bold text-archive-paper leading-snug">
               {station.prompt}
             </h2>
+
+            {/* Contexto da bancada em linguagem clara */}
+            {station.context && (
+              <p className="text-xs sm:text-sm text-archive-muted leading-relaxed font-sans pt-2 border-t border-archive-800">
+                💡 <strong>Entenda o cenário:</strong> {station.context}
+              </p>
+            )}
           </div>
 
           {/* Opções de Resposta Ampliadas */}
-          <div className="space-y-2.5 pt-1">
-            {station.options.map((opt) => {
-              const isSelected = selectedOption === opt.value;
-              return (
-                <button
-                  type="button"
-                  key={opt.value}
-                  disabled={hasAnswered}
-                  onClick={() => setSelectedOption(opt.value)}
-                  className={`w-full text-left p-4 sm:p-4.5 rounded-sm border-2 font-mono text-sm sm:text-base leading-snug transition-all duration-150 flex items-center justify-between gap-3 ${
-                    isSelected
-                      ? 'bg-turing-amber/20 border-turing-amber text-archive-paper font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)]'
-                      : 'bg-archive-900 border-archive-700 text-archive-paper/90 hover:border-archive-500 hover:bg-archive-800'
-                  } ${hasAnswered ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]'}`}
-                >
-                  <span className="leading-snug">{opt.label}</span>
-                  <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      isSelected
-                        ? 'border-turing-amber bg-turing-amber text-archive-950'
-                        : 'border-archive-600'
-                    }`}
-                  >
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-archive-950" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Pergunta extra opcional para Detetive Real x IA */}
-          {slug === 'real-ou-ia' && !hasAnswered && (
-            <div className="pt-2 space-y-1.5">
-              <label className="text-xs font-mono text-archive-muted block">
-                O que mais chamou sua atenção para decidir?
-              </label>
-              <select
-                value={influenceFactor}
-                onChange={(e) => setInfluenceFactor(e.target.value)}
-                className="w-full bg-archive-950 border border-archive-700 text-xs sm:text-sm font-mono text-archive-paper p-2.5 rounded-xs outline-none focus:border-turing-amber"
-              >
-                <option value="">Selecione um fator (opcional)...</option>
-                <option value="maos">Mãos ou dedos</option>
-                <option value="olhos">Olhos e reflexos</option>
-                <option value="iluminacao">Iluminação ou sombras</option>
-                <option value="pele">Textura de pele muito lisa</option>
-                <option value="intuiçao">Pura intuição</option>
-                <option value="outro">Outro detalhe</option>
-              </select>
+          <div className="space-y-3">
+            <div className="text-xs sm:text-sm font-bold text-archive-paper flex items-center gap-2 px-1">
+              <span className="w-5 h-5 rounded-full bg-turing-amber text-archive-950 flex items-center justify-center font-black text-xs">
+                2
+              </span>
+              <span>Escolha sua resposta:</span>
             </div>
-          )}
+
+            <div className="space-y-2.5">
+              {station.options.map((opt, idx) => {
+                const letters = ['A', 'B', 'C', 'D', 'E'];
+                const letterBadge = letters[idx] || String(idx + 1);
+                const isSelected = selectedOption === opt.value;
+
+                return (
+                  <button
+                    type="button"
+                    key={opt.value}
+                    disabled={hasAnswered}
+                    onClick={() => setSelectedOption(opt.value)}
+                    className={`w-full text-left p-4 sm:p-4.5 rounded-md border-2 font-sans text-sm sm:text-base leading-snug transition-all duration-150 flex items-center gap-3.5 ${
+                      isSelected
+                        ? 'bg-turing-amber/20 border-turing-amber text-archive-paper font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                        : 'bg-archive-950 border-archive-700 text-archive-paper/90 hover:border-archive-500 hover:bg-archive-800'
+                    } ${hasAnswered ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]'}`}
+                  >
+                    <span className={`w-8 h-8 rounded-sm flex items-center justify-center font-mono text-sm font-black shrink-0 ${
+                      isSelected
+                        ? 'bg-turing-amber text-archive-950 border border-turing-amber'
+                        : 'bg-archive-900 border border-archive-600 text-turing-amber'
+                    }`}>
+                      {letterBadge}
+                    </span>
+                    <span className="flex-1 font-medium">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Pergunta extra opcional para Detetive Real x IA */}
+            {slug === 'real-ou-ia' && !hasAnswered && (
+              <div className="pt-2 space-y-1.5">
+                <label className="text-xs font-bold text-archive-muted block">
+                  O que mais chamou sua atenção para decidir? (opcional)
+                </label>
+                <select
+                  value={influenceFactor}
+                  onChange={(e) => setInfluenceFactor(e.target.value)}
+                  className="w-full bg-archive-950 border-2 border-archive-700 text-xs sm:text-sm font-sans text-archive-paper p-3 rounded-md outline-none focus:border-turing-amber"
+                >
+                  <option value="">Selecione um fator...</option>
+                  <option value="maos">Mãos ou dedos estranhos</option>
+                  <option value="olhos">Olhos e reflexos</option>
+                  <option value="iluminacao">Iluminação ou sombras artificiais</option>
+                  <option value="pele">Textura de pele lisa demais</option>
+                  <option value="intuiçao">Pura intuição</option>
+                  <option value="outro">Outro detalhe</option>
+                </select>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Botão de Confirmação */}
+        {/* Botão de Confirmação Grande e Visível */}
         {!hasAnswered && (
-          <div className="pt-3">
-            <TerminalButton
+          <div className="pt-2">
+            <button
               type="button"
-              variant="primary"
-              size="lg"
-              fullWidth
               disabled={!selectedOption || isSubmitting}
               onClick={handleConfirmAnswer}
+              className="w-full py-4 px-6 bg-turing-amber hover:bg-amber-400 disabled:opacity-40 text-archive-950 font-black text-base sm:text-lg rounded-md transition-all flex items-center justify-center gap-3 cursor-pointer shadow-xl uppercase tracking-wider"
             >
-              <span className="text-sm sm:text-base font-bold">
-                {isSubmitting ? 'REGISTRANDO...' : 'CONFIRMAR RESPOSTA'}
-              </span>
+              <span>{isSubmitting ? 'Registrando...' : 'Confirmar e Enviar Resposta'}</span>
               <Award className="w-5 h-5" />
-            </TerminalButton>
+            </button>
           </div>
         )}
-      </ClassifiedCard>
+      </div>
 
-      {/* Explicação Pedagógica Pós-Resposta Ampliada */}
+      {/* Explicação Pedagógica Pós-Resposta */}
       {hasAnswered && (
         <div className="space-y-4 animate-in fade-in duration-300">
-          <ClassifiedCard
-            title="INSIGHT INVESTIGATIVO // ANÁLISE"
-            badge={`+${station.xp} XP`}
-            badgeVariant="complete"
-            className="space-y-3.5 bg-archive-850/90 border-2 border-turing-green/40 p-5"
-          >
-            <div className="flex items-center gap-2 text-turing-green font-mono text-sm font-bold uppercase">
-              <CheckCircle2 className="w-5 h-5" />
-              <span>Resposta Registrada com Sucesso</span>
+          <div className="bg-archive-900 border-2 border-turing-green/50 rounded-md p-6 space-y-4 shadow-xl">
+            <div className="flex items-center gap-2.5 text-turing-green font-bold text-base sm:text-lg">
+              <CheckCircle2 className="w-6 h-6 text-turing-green shrink-0" />
+              <span>Resposta Registrada (+{station.xp} Pontos)!</span>
             </div>
 
-            <h3 className="text-lg sm:text-xl font-mono font-bold text-archive-paper">
-              {station.explanation.title}
-            </h3>
-
-            <p className="text-sm sm:text-base text-archive-paper/95 leading-relaxed font-sans">
-              {station.explanation.description}
-            </p>
-
-            <div className="p-3.5 sm:p-4 bg-archive-950 border border-turing-amber/40 rounded-sm">
-              <div className="text-xs font-mono text-turing-amber uppercase tracking-wider font-bold">
-                REFLEXÃO CENTRAL
-              </div>
-              <p className="text-sm sm:text-base font-mono text-archive-paper mt-1 italic font-semibold">
-                "{station.explanation.insight}"
+            <div className="space-y-1.5">
+              <h3 className="text-lg sm:text-xl font-bold text-archive-paper">
+                {station.explanation.title}
+              </h3>
+              <p className="text-sm sm:text-base text-archive-paper/90 leading-relaxed font-sans">
+                {station.explanation.description}
               </p>
             </div>
-          </ClassifiedCard>
+
+            {station.explanation.insight && (
+              <div className="p-3.5 sm:p-4 bg-archive-950 border-l-4 border-turing-amber rounded-r-md">
+                <p className="text-sm sm:text-base font-medium text-archive-paper italic">
+                  "{station.explanation.insight}"
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Navegação Entre Estações */}
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <Link href="/passaporte" className="w-full sm:w-1/2">
-              <TerminalButton variant="secondary" size="md" fullWidth>
+              <button
+                type="button"
+                className="w-full py-3.5 px-4 bg-archive-800 hover:bg-archive-700 text-archive-paper font-bold text-sm rounded-md transition-colors flex items-center justify-center gap-2 border border-archive-700 cursor-pointer"
+              >
                 <ArrowLeft className="w-4 h-4" />
-                <span>VER PASSAPORTE</span>
-              </TerminalButton>
+                <span>Ver Todas as Estações</span>
+              </button>
             </Link>
 
             {nextStation ? (
               <Link href={`/estacao/${nextStation.slug}`} className="w-full sm:w-1/2">
-                <TerminalButton variant="primary" size="md" fullWidth>
-                  <span>PRÓXIMA ESTAÇÃO</span>
+                <button
+                  type="button"
+                  className="w-full py-3.5 px-4 bg-turing-amber hover:bg-amber-400 text-archive-950 font-black text-sm rounded-md transition-colors flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+                >
+                  <span>Ir para Estação {String(nextStation.order).padStart(2, '0')}</span>
                   <ArrowRight className="w-4 h-4" />
-                </TerminalButton>
+                </button>
               </Link>
             ) : (
               <Link href="/conclusao" className="w-full sm:w-1/2">
-                <TerminalButton variant="primary" size="md" fullWidth>
-                  <span>IR PARA A CONCLUSÃO</span>
+                <button
+                  type="button"
+                  className="w-full py-3.5 px-4 bg-turing-green hover:bg-emerald-400 text-archive-950 font-black text-sm rounded-md transition-colors flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+                >
+                  <span>Finalizar Participação</span>
                   <Sparkles className="w-4 h-4" />
-                </TerminalButton>
+                </button>
               </Link>
             )}
           </div>
